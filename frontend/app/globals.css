@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 350 30% 99%;
+    --foreground: 350 10% 10%;
+
+    --card: 350 30% 99%;
+    --card-foreground: 350 10% 10%;
+
+    --popover: 350 30% 99%;
+    --popover-foreground: 350 10% 10%;
+
+    --primary: 350 65% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 15 85% 95%;
+    --secondary-foreground: 350 10% 10%;
+
+    --muted: 350 10% 95%;
+    --muted-foreground: 350 10% 40%;
+
+    --accent: 15 75% 75%;
+    --accent-foreground: 350 10% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 350 20% 90%;
+    --input: 350 20% 90%;
+    --ring: 350 65% 65%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 350 10% 10%;
+    --foreground: 350 10% 98%;
+
+    --card: 350 10% 12%;
+    --card-foreground: 350 10% 98%;
+
+    --popover: 350 10% 12%;
+    --popover-foreground: 350 10% 98%;
+
+    --primary: 350 65% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 15 85% 95%;
+    --secondary-foreground: 350 10% 10%;
+
+    --muted: 350 10% 20%;
+    --muted-foreground: 350 10% 70%;
+
+    --accent: 15 75% 75%;
+    --accent-foreground: 350 10% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 350 10% 25%;
+    --input: 350 10% 25%;
+    --ring: 350 65% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+}
+
+.floral-pattern {
+  background-image: url("/images/floral-pattern.png");
+  background-size: 300px;
+  background-repeat: repeat;
+  background-opacity: 0.05;
+}
+
+.wood-bg {
+  background-image: url("/images/wood-bg.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+/* Estilos responsivos adicionales */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Mejoras para dispositivos móviles */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
