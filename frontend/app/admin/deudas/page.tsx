@@ -1,5 +1,9 @@
+"use client"
+
 import Link from "next/link"
-import { Download, MoreHorizontal, Plus, Search } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,61 +21,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function DeudasPage() {
-  // Datos de ejemplo
-  const debts = [
-    {
-      id: 1,
-      client: "María González",
-      amount: 250.0,
-      date: "2023-04-15",
-      dueDate: "2023-05-15",
-      status: "Pendiente",
-      description: "Compra de vestido y accesorios",
-    },
-    {
-      id: 2,
-      client: "Laura Martínez",
-      amount: 120.5,
-      date: "2023-04-10",
-      dueDate: "2023-05-10",
-      status: "Pagado",
-      description: "Compra de perfumes",
-    },
-    {
-      id: 3,
-      client: "Carolina Pérez",
-      amount: 350.75,
-      date: "2023-03-28",
-      dueDate: "2023-04-28",
-      status: "Vencido",
-      description: "Compra de prendas de temporada",
-    },
-    {
-      id: 4,
-      client: "Sofía Rodríguez",
-      amount: 180.25,
-      date: "2023-04-05",
-      dueDate: "2023-05-05",
-      status: "Pendiente",
-      description: "Compra de accesorios",
-    },
-    {
-      id: 5,
-      client: "Valentina López",
-      amount: 95.0,
-      date: "2023-04-12",
-      dueDate: "2023-05-12",
-      status: "Pendiente",
-      description: "Compra de perfume",
-    },
-  ]
+  const [debtors, setDebtors] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => {
+    async function loadDebts() {
+      try {
+        const data = await apiFetch<any[]>("/admin/debtors")
+        setDebtors(data)
+      } catch (error) {
+        console.error("No se pudieron cargar las deudas", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadDebts()
+  }, [])
   // Calcular totales
-  const totalPending = debts.filter((debt) => debt.status === "Pendiente").reduce((sum, debt) => sum + debt.amount, 0)
-
-  const totalOverdue = debts.filter((debt) => debt.status === "Vencido").reduce((sum, debt) => sum + debt.amount, 0)
-
-  const totalPaid = debts.filter((debt) => debt.status === "Pagado").reduce((sum, debt) => sum + debt.amount, 0)
+  const totalPending = debtors.reduce((sum, d) => sum + Number(d.balance || 0), 0)
+  const totalOverdue = 0 // Requiere cálculo de fechas en backend
+  const totalPaid = debtors.reduce((sum, d) => sum + Number(d.total_paid || 0), 0)
 
   return (
     <div className="space-y-6">
@@ -154,59 +123,66 @@ export default function DeudasPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Vencimiento</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[100px] text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {debts.map((debt) => (
-              <TableRow key={debt.id}>
-                <TableCell className="font-medium">{debt.client}</TableCell>
-                <TableCell className="max-w-[200px] truncate">{debt.description}</TableCell>
-                <TableCell className="text-right">${debt.amount.toFixed(2)}</TableCell>
-                <TableCell>{formatDate(debt.date)}</TableCell>
-                <TableCell>{formatDate(debt.dueDate)}</TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant={
-                      debt.status === "Pagado" ? "outline" : debt.status === "Vencido" ? "destructive" : "default"
-                    }
-                  >
-                    {debt.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Registrar pago</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+      <div className="border rounded-lg overflow-hidden min-h-[300px]">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead className="text-right">Pedidos</TableHead>
+                <TableHead className="text-right">Pagado</TableHead>
+                <TableHead className="text-right">Deuda Restante</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="w-[100px] text-right">Acciones</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {debtors.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                    No hay clientes con deudas.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                debtors.map((debtor) => (
+                  <TableRow key={debtor.id}>
+                    <TableCell className="font-medium">{debtor.full_name}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{debtor.email}</TableCell>
+                    <TableCell className="text-right">${Number(debtor.total_orders).toFixed(2)}</TableCell>
+                    <TableCell className="text-right text-green-600">${Number(debtor.total_paid).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold text-amber-500">${Number(debtor.balance).toFixed(2)}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">
+                        Pendiente
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Abrir menú</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>Ver historial</DropdownMenuItem>
+                          <DropdownMenuItem>Registrar pago a cuenta</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <div className="flex items-center justify-end space-x-2">
@@ -222,8 +198,10 @@ export default function DeudasPage() {
 }
 
 // Función para formatear fechas
-function formatDate(dateString: string) {
+function formatDate(dateString: string | null | undefined) {
+  if (!dateString) return "—"
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",

@@ -1,45 +1,49 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Heart, Settings, User, Eye } from "lucide-react"
+import { ShoppingBag, Heart, Settings, User, Eye, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { apiFetch } from "@/lib/api"
 
 export default function PedidosPage() {
   const { user } = useAuth()
+  const [pedidos, setPedidos] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadPedidos() {
+      try {
+        const data = await apiFetch<any[]>("/orders/me")
+        setPedidos(data)
+      } catch (err) {
+        console.error("Error al cargar pedidos:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    if (user) loadPedidos()
+  }, [user])
 
   if (!user) {
-    return null // Esto no debería ocurrir debido al middleware, pero por si acaso
+    return null
   }
 
-  // Datos de ejemplo para pedidos
-  const pedidos = [
-    {
-      id: "PED-001",
-      fecha: "2023-05-10",
-      total: 155.98,
-      estado: "Entregado",
-      productos: 2,
-    },
-    {
-      id: "PED-002",
-      fecha: "2023-06-15",
-      total: 89.99,
-      estado: "En proceso",
-      productos: 1,
-    },
-    {
-      id: "PED-003",
-      fecha: "2023-07-20",
-      total: 210.5,
-      estado: "Pendiente",
-      productos: 3,
-    },
-  ]
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      "pending": "Pendiente",
+      "paid": "Pagado",
+      "shipped": "Enviado",
+      "delivered": "Entregado",
+      "cancelled": "Cancelado"
+    }
+    return labels[status] || status
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -97,21 +101,21 @@ export default function PedidosPage() {
                       <TableBody>
                         {pedidos.map((pedido) => (
                           <TableRow key={pedido.id}>
-                            <TableCell className="font-medium">{pedido.id}</TableCell>
-                            <TableCell>{formatDate(pedido.fecha)}</TableCell>
-                            <TableCell className="text-center">{pedido.productos}</TableCell>
-                            <TableCell className="text-right">${pedido.total.toFixed(2)}</TableCell>
+                            <TableCell className="font-medium">#{pedido.id}</TableCell>
+                            <TableCell>{formatDate(pedido.created_at)}</TableCell>
+                            <TableCell className="text-center">{pedido.items?.length || 0}</TableCell>
+                            <TableCell className="text-right">${Number(pedido.total_price).toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               <Badge
                                 variant={
-                                  pedido.estado === "Entregado"
+                                  pedido.status === "delivered"
                                     ? "outline"
-                                    : pedido.estado === "En proceso"
-                                      ? "default"
-                                      : "secondary"
+                                    : pedido.status === "pending"
+                                      ? "secondary"
+                                      : "default"
                                 }
                               >
-                                {pedido.estado}
+                                {getStatusLabel(pedido.status)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">

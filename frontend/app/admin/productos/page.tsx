@@ -1,6 +1,23 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
-import { Edit, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Edit, MoreHorizontal, Plus, Search, Trash2, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,57 +34,73 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function ProductosPage() {
-  // Datos de ejemplo
-  const products = [
-    {
-      id: 1,
-      name: "Vestido Floral Primavera",
-      price: 89.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-      stock: 15,
-      status: "Activo",
-    },
-    {
-      id: 2,
-      name: "Collar Perlas Elegance",
-      price: 45.5,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-      stock: 8,
-      status: "Activo",
-    },
-    {
-      id: 3,
-      name: "Perfume Rosa Silvestre",
-      price: 75.0,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Perfumes",
-      stock: 12,
-      status: "Activo",
-    },
-    {
-      id: 4,
-      name: "Blusa Seda Premium",
-      price: 65.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-      stock: 5,
-      status: "Bajo Stock",
-    },
-    {
-      id: 5,
-      name: "Aretes Cristal Dorado",
-      price: 35.5,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-      stock: 0,
-      status: "Agotado",
-    },
-  ]
+  const router = useRouter()
+  const [products, setProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [productToDelete, setProductToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [search, setSearch] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+
+  async function loadProducts() {
+    try {
+      const data = await apiFetch<any[]>("/products/")
+      setProducts(data)
+    } catch (error) {
+      console.error("No se pudieron cargar los productos", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  async function handleDelete(id: number, name: string) {
+    try {
+      setDeletingId(id)
+      setProductToDelete(null)
+      await apiFetch(`/products/${id}`, { method: "DELETE" })
+      toast({ title: "Producto eliminado", description: `"${name}" fue eliminado exitosamente.` })
+      await loadProducts()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo eliminar el producto.", variant: "destructive" })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const getStatus = (stock: number) => {
+    if (stock > 5) return "Activo"
+    if (stock > 0) return "Bajo Stock"
+    return "Agotado"
+  }
+
+  // Filtrado en tiempo real (client-side)
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = search === "" ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.category?.name || "").toLowerCase().includes(search.toLowerCase())
+
+    const matchesCategory = categoryFilter === "all" ||
+      (p.category?.name || "").toLowerCase() === categoryFilter.toLowerCase()
+
+    const st = getStatus(p.stock)
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && st === "Activo") ||
+      (statusFilter === "low" && st === "Bajo Stock") ||
+      (statusFilter === "out" && st === "Agotado")
+
+    return matchesSearch && matchesCategory && matchesStatus
+  })
+
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-heading">Productos</h2>
@@ -84,11 +117,16 @@ export default function ProductosPage() {
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative w-full sm:w-[300px]">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar productos..." className="pl-8" />
+          <Input
+            placeholder="Buscar productos..."
+            className="pl-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          <Select defaultValue="all">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
@@ -100,7 +138,7 @@ export default function ProductosPage() {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
@@ -114,74 +152,99 @@ export default function ProductosPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[80px]">Imagen</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead className="hidden md:table-cell">Categoría</TableHead>
-              <TableHead className="text-right">Precio</TableHead>
-              <TableHead className="hidden sm:table-cell text-center">Stock</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[70px] text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    width={50}
-                    height={50}
-                    className="aspect-square rounded-md object-cover"
-                  />
-                </TableCell>
-                <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
-                <TableCell className="hidden md:table-cell">{product.category}</TableCell>
-                <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
-                <TableCell className="hidden sm:table-cell text-center">{product.stock}</TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant={
-                      product.status === "Activo"
-                        ? "default"
-                        : product.status === "Bajo Stock"
-                          ? "outline"
-                          : "destructive"
-                    }
-                  >
-                    {product.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+      <div className="border rounded-lg overflow-hidden overflow-x-auto min-h-[300px]">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">Imagen</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead className="hidden md:table-cell">Categoría</TableHead>
+                <TableHead className="text-right">Precio</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">Stock</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="w-[70px] text-right">Acciones</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                    {products.length === 0 ? "No hay productos todavía." : "No se encontraron productos con esos filtros."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProducts.map((product) => {
+                  const status = getStatus(product.stock)
+                  return (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <Image
+                          src={product.image_url || "/placeholder.svg"}
+                          alt={product.name}
+                          width={50}
+                          height={50}
+                          className="aspect-square rounded-md object-cover"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
+                      <TableCell className="hidden md:table-cell">{product.category?.name || "Sin categoría"}</TableCell>
+                      <TableCell className="text-right">${Number(product.price).toFixed(2)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-center">{product.stock}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={
+                            status === "Activo"
+                              ? "default"
+                              : status === "Bajo Stock"
+                                ? "outline"
+                                : "destructive"
+                          }
+                        >
+                          {status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Abrir menú</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push(`/admin/productos/${product.id}/editar`)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              disabled={deletingId === product.id}
+                              onClick={() => setProductToDelete({ id: product.id, name: product.name })}
+                            >
+                              {deletingId === product.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                              )}
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -198,6 +261,33 @@ export default function ProductosPage() {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    <Toaster />
+    
+    {/* Diálogo de confirmación de eliminación */}
+    <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Estás a punto de eliminar{" "}
+            <span className="font-semibold text-foreground">"{productToDelete?.name}"</span>.
+            <br />
+            Esta acción es permanente y no se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => productToDelete && handleDelete(productToDelete.id, productToDelete.name)}
+          >
+            {deletingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+            Sí, eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

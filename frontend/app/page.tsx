@@ -1,11 +1,33 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 
 export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchFeatured() {
+      try {
+        const data = await apiFetch<any[]>("/products/")
+        // Mostrar solo los primeros 4 productos como destacados
+        setFeaturedProducts(data.slice(0, 4))
+      } catch (error) {
+        console.error("Error al cargar productos destacados:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchFeatured()
+  }, [])
+
   const categories = [
     {
       title: "Prendas",
@@ -21,37 +43,6 @@ export default function HomePage() {
       title: "Perfumes",
       image: "/placeholder.svg?height=600&width=400",
       href: "/perfumes",
-    },
-  ]
-
-  const featuredProducts = [
-    {
-      id: 1,
-      name: "Vestido Floral Primavera",
-      price: 89.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-    },
-    {
-      id: 2,
-      name: "Collar Perlas Elegance",
-      price: 45.5,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-    },
-    {
-      id: 3,
-      name: "Perfume Rosa Silvestre",
-      price: 75.0,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Perfumes",
-    },
-    {
-      id: 4,
-      name: "Blusa Seda Premium",
-      price: 65.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
     },
   ]
 
@@ -140,30 +131,36 @@ export default function HomePage() {
               <p className="text-muted-foreground max-w-2xl">Descubre nuestras piezas más populares y exclusivas</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/producto/${product.id}`}
-                  className="group bg-background rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="aspect-square overflow-hidden">
-                    <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      width={300}
-                      height={300}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="text-sm text-muted-foreground mb-1">{product.category}</div>
-                    <h3 className="font-medium mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
-                    <div className="font-semibold">${product.price.toFixed(2)}</div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {featuredProducts.map((product) => (
+                  <Link
+                    key={product.id}
+                    href={`/producto/${product.id}`}
+                    className="group bg-background rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="aspect-square overflow-hidden">
+                      <Image
+                        src={product.image_url || "/placeholder.svg"}
+                        alt={product.name}
+                        width={300}
+                        height={300}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <div className="text-sm text-muted-foreground mb-1">{product.category?.name || "Sin categoría"}</div>
+                      <h3 className="font-medium mb-1 group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
+                      <div className="font-semibold">${Number(product.price).toFixed(2)}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
 
             <div className="flex justify-center mt-10">
               <Button size="lg" variant="outline" asChild>

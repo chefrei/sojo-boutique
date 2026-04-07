@@ -1,0 +1,9 @@
+fastapi
+sqlmodel
+python-jose
+passlib
+python-multipart
+pydantic-settings
+sqlalchemy-cloudflare-d1
+uvicorn
+email-validator

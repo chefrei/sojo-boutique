@@ -1,5 +1,9 @@
+"use client"
+
 import Link from "next/link"
-import { Download, MoreHorizontal, Plus, Search } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { apiFetch } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,77 +22,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 
 export default function VentasPage() {
-  // Datos de ejemplo
-  const sales = [
-    {
-      id: 1,
-      cliente: "María González",
-      fecha: "2023-05-01",
-      productos: 3,
-      monto: 250.0,
-      metodo: "Efectivo",
-      estado: "Completado",
-    },
-    {
-      id: 2,
-      cliente: "Laura Martínez",
-      fecha: "2023-05-02",
-      productos: 2,
-      monto: 120.5,
-      metodo: "Tarjeta",
-      estado: "Completado",
-    },
-    {
-      id: 3,
-      cliente: "Carolina Pérez",
-      fecha: "2023-05-03",
-      productos: 5,
-      monto: 350.75,
-      metodo: "Transferencia",
-      estado: "Pendiente",
-    },
-    {
-      id: 4,
-      cliente: "Sofía Rodríguez",
-      fecha: "2023-05-04",
-      productos: 1,
-      monto: 180.25,
-      metodo: "Efectivo",
-      estado: "Completado",
-    },
-    {
-      id: 5,
-      cliente: "Valentina López",
-      fecha: "2023-05-05",
-      productos: 2,
-      monto: 95.0,
-      metodo: "Tarjeta",
-      estado: "Completado",
-    },
-    {
-      id: 6,
-      cliente: "Ana Torres",
-      fecha: "2023-05-06",
-      productos: 4,
-      monto: 210.5,
-      metodo: "Efectivo",
-      estado: "Completado",
-    },
-    {
-      id: 7,
-      cliente: "Gabriela Sánchez",
-      fecha: "2023-05-07",
-      productos: 3,
-      monto: 175.25,
-      metodo: "Transferencia",
-      estado: "Pendiente",
-    },
-  ]
+  const [sales, setSales] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => {
+    async function loadSales() {
+      try {
+        const data = await apiFetch<any[]>("/admin/orders")
+        setSales(data)
+      } catch (error) {
+        console.error("No se pudieron cargar las ventas", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadSales()
+  }, [])
   // Calcular totales
-  const totalVentas = sales.reduce((sum, sale) => sum + sale.monto, 0)
-  const ventasCompletadas = sales.filter((sale) => sale.estado === "Completado").length
-  const ventasPendientes = sales.filter((sale) => sale.estado === "Pendiente").length
+  const totalVentas = sales.reduce((sum, sale) => sum + Number(sale.total || sale.total_price || 0), 0)
+  const ventasCompletadas = sales.filter((sale) => sale.estado === "Completado" || sale.payment_status === "paid").length
+  const ventasPendientes = sales.filter((sale) => sale.estado !== "Completado" && sale.payment_status !== "paid").length
 
   return (
     <div className="space-y-6">
@@ -174,61 +127,75 @@ export default function VentasPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead className="hidden md:table-cell">Fecha</TableHead>
-              <TableHead className="hidden sm:table-cell text-center">Productos</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead className="hidden lg:table-cell">Método</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[70px] text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sales.map((sale) => (
-              <TableRow key={sale.id}>
-                <TableCell>#{sale.id.toString().padStart(4, "0")}</TableCell>
-                <TableCell className="font-medium max-w-[120px] truncate">{sale.cliente}</TableCell>
-                <TableCell className="hidden md:table-cell">{formatDate(sale.fecha)}</TableCell>
-                <TableCell className="hidden sm:table-cell text-center">{sale.productos}</TableCell>
-                <TableCell className="text-right">${sale.monto.toFixed(2)}</TableCell>
-                <TableCell className="hidden lg:table-cell">{sale.metodo}</TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant={
-                      sale.estado === "Completado" ? "default" : sale.estado === "Pendiente" ? "outline" : "destructive"
-                    }
-                  >
-                    {sale.estado}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Imprimir factura</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">Anular venta</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+      <div className="border rounded-lg overflow-hidden overflow-x-auto min-h-[300px]">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Cliente ID</TableHead>
+                <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">Productos</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="hidden lg:table-cell">Método</TableHead>
+                <TableHead className="text-center">Estado</TableHead>
+                <TableHead className="w-[70px] text-right">Acciones</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sales.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                    No hay ventas registradas.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sales.map((sale) => (
+                  <TableRow key={sale.db_id || sale.id}>
+                    <TableCell>{sale.id}</TableCell>
+                    <TableCell className="font-medium max-w-[120px] truncate">{sale.cliente || sale.user_id}</TableCell>
+                    <TableCell className="hidden md:table-cell">{sale.fecha ? formatDate(sale.fecha) : "—"}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-center truncate max-w-[150px]">{(sale.productos || []).join(", ") || "--"}</TableCell>
+                    <TableCell className="text-right">${Number(sale.total || sale.total_price || 0).toFixed(2)}</TableCell>
+                    <TableCell className="hidden lg:table-cell">Online</TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={
+                          sale.estado === "Completado" || sale.payment_status === "paid" ? "default" : "outline"
+                        }
+                      >
+                        {(sale.estado || sale.payment_status || "Pendiente").toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Abrir menú</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>Ver detalles</DropdownMenuItem>
+                          <DropdownMenuItem>Imprimir factura</DropdownMenuItem>
+                          <DropdownMenuItem>Editar</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">Anular venta</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -250,8 +217,10 @@ export default function VentasPage() {
 }
 
 // Función para formatear fechas
-function formatDate(dateString: string) {
+function formatDate(dateString: string | null | undefined) {
+  if (!dateString) return "—"
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",

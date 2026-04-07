@@ -4,10 +4,12 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Upload, X } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Upload, X, Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { apiFetch } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,7 +42,9 @@ const productSchema = z.object({
 type ProductFormValues = z.infer<typeof productSchema>
 
 export default function NuevoProductoPage() {
-  const [images, setImages] = useState<string[]>([])
+  const router = useRouter()
+  const [images, setImages] = useState<{file: File, url: string}[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -63,19 +67,88 @@ export default function NuevoProductoPage() {
     },
   })
 
-  function onSubmit(data: ProductFormValues) {
-    // En una aplicación real, aquí enviarías los datos al servidor
-    console.log(data)
-    toast({
-      title: "Producto guardado",
-      description: `El producto "${data.name}" ha sido guardado exitosamente.`,
-    })
+  async function onSubmit(data: ProductFormValues) {
+    try {
+      console.log("Iniciando guardado de producto...")
+      setIsSubmitting(true)
+
+      let image_url = ""
+      
+      // Upload image first if exists
+      if (images.length > 0) {
+        console.log("Subiendo imagen...")
+        const formData = new FormData()
+        formData.append("file", images[0].file)
+        
+        try {
+          // Usamos apiFetch que maneja la auth y el FormData automáticamente
+          const uploadRes = await apiFetch<any>("/upload/", {
+            method: "POST",
+            body: formData,
+          })
+          console.log("Respuesta de upload:", uploadRes)
+          image_url = uploadRes.image_url
+        } catch(err) {
+          console.error("Error al subir foto:", err)
+          toast({
+            title: "Atención",
+            description: "No se pudo subir la foto oficial. El producto se guardará sin ella.",
+            variant: "destructive"
+          })
+        }
+      }
+
+      // Map categories to IDs
+      const categoryMap: Record<string, number> = {
+        "prendas": 1,
+        "accesorios": 2,
+        "perfumes": 3
+      }
+
+      const payload = {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        stock: data.inventory,
+        category_id: categoryMap[data.category] || 1,
+        image_url: image_url
+      }
+      
+      console.log("Enviando payload a /products/:", payload)
+
+      const productRes = await apiFetch("/products/", {
+         method: "POST",
+         body: JSON.stringify(payload)
+      })
+      
+      console.log("Producto guardado con éxito:", productRes)
+
+      toast({
+        title: "Producto guardado",
+        description: `El producto "${data.name}" ha sido guardado exitosamente.`,
+      })
+      
+      router.push("/admin/productos")
+    } catch (error: any) {
+       console.error("Error CRÍTICO de guardado:", error)
+       toast({
+         title: "Error",
+         description: error.message || "Ocurrió un problema guardando el producto.",
+         variant: "destructive"
+       })
+    } finally {
+       console.log("Finalizando submit...")
+       setIsSubmitting(false)
+    }
   }
 
   // Función para manejar la carga de imágenes
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newImages = Array.from(e.target.files).map((file) => URL.createObjectURL(file))
+      const newImages = Array.from(e.target.files).map((file) => ({
+        file,
+        url: URL.createObjectURL(file)
+      }))
       setImages([...images, ...newImages])
     }
   }
@@ -100,10 +173,14 @@ export default function NuevoProductoPage() {
           <h2 className="text-2xl font-heading">Nuevo Producto</h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => form.reset()}>
+          <Button variant="outline" onClick={() => form.reset()} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={form.handleSubmit(onSubmit)}>Guardar Producto</Button>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
+            ) : "Guardar Producto"}
+          </Button>
         </div>
       </div>
 
@@ -150,10 +227,10 @@ export default function NuevoProductoPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Imágenes</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {images.map((image, index) => (
+                  {images.map((imgObj, index) => (
                     <div key={index} className="aspect-square rounded-md border overflow-hidden relative group">
                       <img
-                        src={image || "/placeholder.svg"}
+                        src={imgObj.url}
                         alt={`Imagen ${index + 1}`}
                         className="w-full h-full object-cover"
                       />

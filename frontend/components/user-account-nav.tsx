@@ -41,8 +41,8 @@ export function UserAccountNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" alt={user.name} />
-            <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarImage src="/placeholder-user.jpg" alt={user.full_name || "User"} />
+            <AvatarFallback>{(user.full_name || "U").substring(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

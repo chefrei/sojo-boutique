@@ -1,0 +1,12 @@
+name = "sojo-boutique-backend"
+main = "hello.py"
+compatibility_date = "2024-04-03"
+compatibility_flags = ["python_workers"]
+
+[vars]
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "sojo_boutique_db"
+database_name = "sojo-boutique-db"
+database_id = "bbfa58fa-4977-4547-b856-55c40f45e922"

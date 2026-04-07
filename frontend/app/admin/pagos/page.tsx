@@ -228,8 +228,10 @@ export default function PagosPage() {
 }
 
 // Función para formatear fechas
-function formatDate(dateString: string) {
+function formatDate(dateString: string | null | undefined) {
+  if (!dateString) return "—"
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",

@@ -3,8 +3,8 @@ import { jwtVerify, SignJWT } from "jose"
 export type UserRole = "admin" | "client"
 
 export interface User {
-  id: string
-  name: string
+  id: number
+  full_name: string
   email: string
   role: UserRole
 }
@@ -42,22 +42,22 @@ export function hasAccess(user: User | null, requiredRole?: UserRole): boolean {
 // Datos de ejemplo para usuarios (en producción, esto vendría de una base de datos)
 export const MOCK_USERS = [
   {
-    id: "1",
-    name: "Admin Usuario",
+    id: 1,
+    full_name: "Admin Usuario",
     email: "admin@sojaboutique.com",
     password: "admin123", // En producción, esto estaría hasheado
     role: "admin" as UserRole,
   },
   {
-    id: "2",
-    name: "María González",
+    id: 2,
+    full_name: "María González",
     email: "maria@ejemplo.com",
     password: "cliente123", // En producción, esto estaría hasheado
     role: "client" as UserRole,
   },
   {
-    id: "3",
-    name: "Laura Martínez",
+    id: 3,
+    full_name: "Laura Martínez",
     email: "laura@ejemplo.com",
     password: "cliente123", // En producción, esto estaría hasheado
     role: "client" as UserRole,

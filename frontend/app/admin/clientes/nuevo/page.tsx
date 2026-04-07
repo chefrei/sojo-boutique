@@ -1,9 +1,12 @@
 "use client"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { apiFetch } from "@/lib/api"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +34,9 @@ const clientSchema = z.object({
 type ClientFormValues = z.infer<typeof clientSchema>
 
 export default function NuevoClientePage() {
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
@@ -48,13 +54,29 @@ export default function NuevoClientePage() {
     },
   })
 
-  function onSubmit(data: ClientFormValues) {
-    // En una aplicación real, aquí enviarías los datos al servidor
-    console.log(data)
-    toast({
-      title: "Cliente registrado",
-      description: `El cliente "${data.name}" ha sido registrado exitosamente.`,
-    })
+  async function onSubmit(data: ClientFormValues) {
+    try {
+      setIsSubmitting(true)
+      await apiFetch("/customers/", {
+          method: "POST",
+          body: JSON.stringify(data)
+      })
+      
+      toast({
+        title: "Cliente registrado",
+        description: `El cliente "${data.name}" ha sido registrado exitosamente.`,
+      })
+      router.push("/admin/clientes")
+    } catch (error: any) {
+      console.error("Error al registrar cliente:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Ocurrió un problema registrando el cliente.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -70,10 +92,12 @@ export default function NuevoClientePage() {
           <h2 className="text-2xl font-heading">Nuevo Cliente</h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => form.reset()}>
+          <Button variant="outline" onClick={() => form.reset()} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={form.handleSubmit(onSubmit)}>Guardar Cliente</Button>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</> : "Guardar Cliente"}
+          </Button>
         </div>
       </div>
 

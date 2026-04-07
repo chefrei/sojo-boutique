@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.db
+*.sql
+seed.py
+dump_sqlite.py
+test_api.py
+*.md
+.python-version

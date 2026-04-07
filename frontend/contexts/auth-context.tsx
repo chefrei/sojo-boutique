@@ -2,10 +2,10 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { apiFetch } from "@/lib/api"
 import type { User, UserRole } from "@/lib/auth"
-import { MOCK_USERS } from "@/lib/auth"
 
 interface AuthContextType {
   user: User | null
@@ -18,50 +18,71 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Función simplificada para desarrollo sin backend
-const authenticateUser = (email: string, password: string): User | null => {
-  const user = MOCK_USERS.find((u) => u.email === email && u.password === password)
-  if (!user) return null
-
-  const { password: _, ...userWithoutPassword } = user
-  return userWithoutPassword
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Para desarrollo, podemos establecer un usuario predeterminado (opcional)
-  // Comenta esta línea si quieres que el usuario comience sin autenticación
-  const [user, setUser] = useState<User | null>(
-    MOCK_USERS[0]
-      ? { id: MOCK_USERS[0].id, name: MOCK_USERS[0].name, email: MOCK_USERS[0].email, role: MOCK_USERS[0].role }
-      : null,
-  )
-
-  const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+
+  // Cargar usuario inicial si hay token
+  useEffect(() => {
+    async function loadUser() {
+      const token = localStorage.getItem("sojo_token")
+      if (!token) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const userData = await apiFetch<User>("/auth/me")
+        setUser(userData)
+      } catch (error) {
+        console.error("No se pudo cargar el usuario:", error)
+        localStorage.removeItem("sojo_token")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadUser()
+  }, [])
 
   const login = async (email: string, password: string) => {
     try {
-      const userData = authenticateUser(email, password)
-      if (userData) {
-        setUser(userData)
-        return true
-      }
-      return false
+      setIsLoading(true)
+      const formData = new URLSearchParams()
+      formData.append("username", email)
+      formData.append("password", password)
+
+      // 1. Obtener Token
+      const data = await apiFetch<{ access_token: string }>("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+        auth: false,
+      })
+
+      localStorage.setItem("sojo_token", data.access_token)
+
+      // 2. Obtener datos del usuario
+      const userData = await apiFetch<User>("/auth/me")
+      setUser(userData)
+      return true
     } catch (error) {
       console.error("Error during login:", error)
       return false
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const logout = () => {
+    localStorage.removeItem("sojo_token")
     setUser(null)
     router.push("/")
   }
 
   const hasRole = (role: UserRole) => {
     if (!user) return false
-    if (role === "admin") return user.role === "admin"
-    return true // Los clientes y administradores pueden acceder a rutas de cliente
+    return user.role === role
   }
 
   return (

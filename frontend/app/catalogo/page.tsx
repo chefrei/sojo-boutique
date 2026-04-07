@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,82 +10,46 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart, SlidersHorizontal } from "lucide-react"
+import { Heart, SlidersHorizontal, Loader2 } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { apiFetch } from "@/lib/api"
 
 export default function CatalogoPage() {
-  // Datos de ejemplo
-  const products = [
-    {
-      id: 1,
-      name: "Vestido Floral Primavera",
-      price: 89.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-    },
-    {
-      id: 2,
-      name: "Collar Perlas Elegance",
-      price: 45.5,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-    },
-    {
-      id: 3,
-      name: "Perfume Rosa Silvestre",
-      price: 75.0,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Perfumes",
-    },
-    {
-      id: 4,
-      name: "Blusa Seda Premium",
-      price: 65.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-    },
-    {
-      id: 5,
-      name: "Aretes Cristal Dorado",
-      price: 35.5,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-    },
-    {
-      id: 6,
-      name: "Falda Midi Elegante",
-      price: 55.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Prendas",
-    },
-    {
-      id: 7,
-      name: "Perfume Noche Encantada",
-      price: 82.0,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Perfumes",
-    },
-    {
-      id: 8,
-      name: "Pulsera Plata Delicada",
-      price: 29.99,
-      image: "/placeholder.svg?height=400&width=300",
-      category: "Accesorios",
-    },
-  ]
+  const [products, setProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const categories = [
-    { id: "prendas", label: "Prendas" },
-    { id: "accesorios", label: "Accesorios" },
-    { id: "perfumes", label: "Perfumes" },
-  ]
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          apiFetch<any[]>("/products/"),
+          apiFetch<any[]>("/products/categories")
+        ])
+        setProducts(productsData)
+        setCategories(categoriesData)
+      } catch (error) {
+        console.error("Error al cargar el catálogo:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="flex-1">
         <div className="container py-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Cargando catálogo...</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
             <div>
               <h1 className="font-heading text-3xl md:text-4xl mb-2">Catálogo</h1>
               <p className="text-muted-foreground">Encuentra tus productos favoritos</p>
@@ -111,8 +78,8 @@ export default function CatalogoPage() {
                       <div className="space-y-2">
                         {categories.map((category) => (
                           <div key={category.id} className="flex items-center space-x-2">
-                            <Checkbox id={category.id} />
-                            <Label htmlFor={category.id}>{category.label}</Label>
+                            <Checkbox id={category.slug} />
+                            <Label htmlFor={category.slug}>{category.name}</Label>
                           </div>
                         ))}
                       </div>
@@ -184,7 +151,7 @@ export default function CatalogoPage() {
                 <Link href={`/producto/${product.id}`}>
                   <div className="aspect-square overflow-hidden">
                     <Image
-                      src={product.image || "/placeholder.svg"}
+                      src={product.image_url || "/placeholder.svg"}
                       alt={product.name}
                       width={300}
                       height={300}
@@ -192,11 +159,13 @@ export default function CatalogoPage() {
                     />
                   </div>
                   <div className="p-4">
-                    <div className="text-sm text-muted-foreground mb-1">{product.category}</div>
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {product.category?.name || "Sin categoría"}
+                    </div>
                     <h3 className="font-medium mb-1 group-hover:text-primary transition-colors line-clamp-1">
                       {product.name}
                     </h3>
-                    <div className="font-semibold">${product.price.toFixed(2)}</div>
+                    <div className="font-semibold">${Number(product.price).toFixed(2)}</div>
                   </div>
                 </Link>
               </div>
@@ -206,6 +175,8 @@ export default function CatalogoPage() {
           <div className="flex justify-center mt-10">
             <Button variant="outline">Cargar Más Productos</Button>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>

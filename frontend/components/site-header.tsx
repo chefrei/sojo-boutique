@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/ui/logo"
 import { UserAccountNav } from "@/components/user-account-nav"
+import { useCart } from "@/contexts/cart-context"
 import { cn } from "@/lib/utils"
 
 export function SiteHeader() {
@@ -17,6 +18,7 @@ export function SiteHeader() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { totalItems } = useCart()
 
   // Detectar scroll para cambiar la apariencia del header
   useEffect(() => {
@@ -139,9 +141,14 @@ export function SiteHeader() {
             <Heart className="h-5 w-5" />
             <span className="sr-only">Favoritos</span>
           </Button>
-          <Button variant="ghost" size="icon">
-            <ShoppingBag className="h-5 w-5" />
-            <span className="sr-only">Carrito</span>
+          <Button variant="ghost" size="icon" className="relative group">
+            <ShoppingBag className="h-5 w-5 group-hover:text-primary transition-colors" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {totalItems}
+              </span>
+            )}
+            <span className="sr-only">Carrito ({totalItems})</span>
           </Button>
           <UserAccountNav />
         </div>

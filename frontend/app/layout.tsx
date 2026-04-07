@@ -2,6 +2,7 @@ import type React from "react"
 import { Mona_Sans as FontSans, Playfair_Display as FontHeading } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
+import { CartProvider } from "@/contexts/cart-context"
 import { cn } from "@/lib/utils"
 import "@/app/globals.css"
 
@@ -29,9 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head />
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontHeading.variable)}>
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontHeading.variable)} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
