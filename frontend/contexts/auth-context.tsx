@@ -9,8 +9,8 @@ import type { User, UserRole } from "@/lib/auth"
 
 interface AuthContextType {
   user: User | null
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  isLoading: boolean       // true solo durante la verificación inicial del token
+  login: (email: string, password: string) => Promise<User | null>
   logout: () => void
   isAuthenticated: boolean
   hasRole: (role: UserRole) => boolean
@@ -20,39 +20,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)  // para la carga inicial
   const router = useRouter()
 
-  // Cargar usuario inicial si hay token
+  // Verificar token guardado al cargar la app
   useEffect(() => {
+    let cancelled = false
     async function loadUser() {
-      const token = localStorage.getItem("sojo_token")
+      const token = typeof window !== "undefined" ? localStorage.getItem("sojo_token") : null
       if (!token) {
         setIsLoading(false)
         return
       }
-
       try {
         const userData = await apiFetch<User>("/auth/me")
-        setUser(userData)
+        if (!cancelled) setUser(userData)
       } catch (error) {
         console.error("No se pudo cargar el usuario:", error)
         localStorage.removeItem("sojo_token")
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
     loadUser()
+    return () => { cancelled = true }
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User | null> => {
     try {
-      setIsLoading(true)
       const formData = new URLSearchParams()
       formData.append("username", email)
       formData.append("password", password)
 
-      // 1. Obtener Token
+      // 1. Obtener token
       const data = await apiFetch<{ access_token: string }>("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -62,15 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem("sojo_token", data.access_token)
 
-      // 2. Obtener datos del usuario
+      // 2. Obtener datos del usuario con el nuevo token
       const userData = await apiFetch<User>("/auth/me")
       setUser(userData)
-      return true
+      return userData
     } catch (error) {
       console.error("Error during login:", error)
-      return false
-    } finally {
-      setIsLoading(false)
+      localStorage.removeItem("sojo_token")
+      return null
     }
   }
 

@@ -1,6 +1,14 @@
-# Sojo Boutique
+# Sojo Boutique (White-Label Platform)
 
-Sistema de gestión, catálogo y toma de pedidos con panel administrativo premium.
+Sistema de gestión, catálogo y toma de pedidos con panel administrativo premium, ahora evolucionado a una plataforma de **Marca Blanca** (White-Label) totalmente personalizable.
+
+## ✨ Nuevas Características Premium
+
+- **Personalización de Marca Blanca**: Cambia el logo, nombre del negocio, colores de la interfaz (Primario/Acento) y tipografías de Google Fonts directamente desde el panel administrativo.
+- **Inteligencia de Negocios (Reportes)**:
+  - **Estado de Cuenta (Kardex)**: Historial cronológico detallado por cliente con cálculo de saldos acumulados.
+  - **Resumen Financiero**: Análisis consolidado de ventas vs. recaudación por rangos de fechas.
+- **Exportación Universal**: Generación de reportes dinámicos en PDF y CSV con identidad corporativa inyectada automáticamente.
 
 ## Cómo ejecutar el proyecto
 
@@ -26,15 +34,6 @@ cd frontend
 pnpm run dev
 ```
 *(Si usas pnpm, puedes utilizar `pnpm dev`)*.
-
-O para producción:
-```bash
-cd frontend
-pnpm build
-pnpm start
-```
-
-*El entorno gráfico correrá en `http://localhost:3000`.*
 
 ---
 

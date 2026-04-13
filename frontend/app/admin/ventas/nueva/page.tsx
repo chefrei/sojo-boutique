@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ArrowLeft, Calendar, Minus, Plus, Search, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Calendar, Minus, Plus, Search, Trash2, User, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -30,21 +31,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { apiFetch } from "@/lib/api"
 
-// Esquema para validación del formulario
-const saleSchema = z.object({
-  clientName: z.string().min(3, { message: "El nombre del cliente es requerido" }),
-  clientPhone: z.string().min(7, { message: "El teléfono del cliente es requerido" }),
-  clientEmail: z.string().email({ message: "Ingresa un correo electrónico válido" }).optional().or(z.literal("")),
-  date: z.date({ required_error: "La fecha es requerida" }),
-  paymentMethod: z.string({ required_error: "El método de pago es requerido" }),
-  paymentStatus: z.string({ required_error: "El estado de pago es requerido" }),
-  notes: z.string().optional(),
-})
+// ──────────────────────────────────────────────────────────────
+// Tipos
+// ──────────────────────────────────────────────────────────────
 
-type SaleFormValues = z.infer<typeof saleSchema>
+interface Customer {
+  id: number
+  name: string
+  phone: string
+  email: string
+}
 
-// Tipo para los productos en el carrito
 interface CartItem {
   id: number
   name: string
@@ -53,31 +53,110 @@ interface CartItem {
   subtotal: number
 }
 
+interface ApiProduct {
+  id: number
+  name: string
+  price: number
+  stock: number
+}
+
+// ──────────────────────────────────────────────────────────────
+// Schema de validación
+// ──────────────────────────────────────────────────────────────
+
+const saleSchema = z.object({
+  clientId: z.number({ required_error: "Selecciona un cliente" }),
+  clientName: z.string().min(1),
+  clientPhone: z.string().optional(),
+  clientEmail: z.string().optional(),
+  date: z.date({ required_error: "La fecha es requerida" }),
+  paymentMethod: z.string({ required_error: "El método de pago es requerido" }),
+  paymentStatus: z.string({ required_error: "El estado de pago es requerido" }),
+  notes: z.string().optional(),
+})
+
+type SaleFormValues = z.infer<typeof saleSchema>
+
+// ──────────────────────────────────────────────────────────────
+// Componente principal
+// ──────────────────────────────────────────────────────────────
+
 export default function NuevaVentaPage() {
+  const router = useRouter()
   const [date, setDate] = useState<Date>(new Date())
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showProductDialog, setShowProductDialog] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<CartItem | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Productos de ejemplo para búsqueda
-  const availableProducts = [
-    { id: 1, name: "Vestido Floral Primavera", price: 89.99, stock: 15 },
-    { id: 2, name: "Blusa Seda Premium", price: 65.99, stock: 8 },
-    { id: 3, name: "Collar Perlas Elegance", price: 45.5, stock: 12 },
-    { id: 4, name: "Perfume Rosa Silvestre", price: 75.0, stock: 10 },
-    { id: 5, name: "Falda Midi Elegante", price: 55.99, stock: 6 },
-    { id: 6, name: "Aretes Cristal Dorado", price: 35.5, stock: 20 },
-  ]
+  // Estado para clientes
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customersLoading, setCustomersLoading] = useState(true)
+  const [customersError, setCustomersError] = useState<string | null>(null)
+  const [clientComboOpen, setClientComboOpen] = useState(false)
 
-  // Filtrar productos según término de búsqueda
-  const filteredProducts = availableProducts.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  // Estado para productos (desde API)
+  const [availableProducts, setAvailableProducts] = useState<ApiProduct[]>([])
+  const [productsLoading, setProductsLoading] = useState(false)
+
+  // Cargar clientes al montar — con timeout para evitar spinner infinito
+  useEffect(() => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 s máximo
+
+    async function loadCustomers() {
+      setCustomersLoading(true)
+      setCustomersError(null)
+      try {
+        const data = await apiFetch<Customer[]>("/customers/")
+        setCustomers(data)
+      } catch (err: any) {
+        const msg = err?.name === "AbortError"
+          ? "El servidor tardó demasiado. Verifica que el backend esté corriendo."
+          : (err?.message ?? "No se pudo cargar la lista de clientes")
+        console.error("Error cargando clientes:", err)
+        setCustomersError(msg)
+      } finally {
+        clearTimeout(timeoutId)
+        setCustomersLoading(false)
+      }
+    }
+    loadCustomers()
+    return () => { controller.abort(); clearTimeout(timeoutId) }
+  }, [])
+
+  // Cargar productos al montar
+  useEffect(() => {
+    async function loadProducts() {
+      setProductsLoading(true)
+      try {
+        const data = await apiFetch<ApiProduct[]>("/products/")
+        setAvailableProducts(data)
+      } catch (err) {
+        console.error("Error cargando productos:", err)
+      } finally {
+        setProductsLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
+
+  // Filtrar productos
+  const filteredProducts = availableProducts.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // Filtrar clientes para el combobox
+  const filteredCustomers = customers.filter((c) =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
+      clientId: undefined,
       clientName: "",
       clientPhone: "",
       clientEmail: "",
@@ -88,12 +167,13 @@ export default function NuevaVentaPage() {
     },
   })
 
-  // Actualizar el campo de fecha en el formulario cuando cambia el estado
   useEffect(() => {
     form.setValue("date", date)
   }, [date, form])
 
-  function onSubmit(data: SaleFormValues) {
+  // ── Submit ─────────────────────────────────────────────────
+
+  async function onSubmit(data: SaleFormValues) {
     if (cartItems.length === 0) {
       toast({
         title: "Error",
@@ -103,27 +183,38 @@ export default function NuevaVentaPage() {
       return
     }
 
-    // En una aplicación real, aquí enviarías los datos al servidor
-    console.log({
-      ...data,
-      items: cartItems,
-      subtotal: calculateSubtotal(),
-      taxes: calculateTaxes(),
-      total: calculateTotal(),
-    })
+    setIsSubmitting(true)
+    try {
+      await apiFetch("/orders/", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: data.clientId,
+          items: cartItems.map((i) => ({ product_id: i.id, quantity: i.quantity })),
+        }),
+      })
 
-    toast({
-      title: "Venta registrada",
-      description: `La venta ha sido registrada exitosamente.`,
-    })
+      toast({
+        title: "✅ Venta registrada",
+        description: `Venta para ${data.clientName} registrada exitosamente.`,
+      })
+
+      setTimeout(() => router.push("/admin/ventas"), 1500)
+    } catch (error: any) {
+      toast({
+        title: "Error al registrar venta",
+        description: error?.message ?? "Ocurrió un error inesperado",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  // Función para agregar un producto al carrito
-  const addProductToCart = (product: (typeof availableProducts)[0], quantity = 1) => {
-    const existingItem = cartItems.find((item) => item.id === product.id)
+  // ── Carrito ────────────────────────────────────────────────
 
-    if (existingItem) {
-      // Si el producto ya está en el carrito, actualizar cantidad
+  const addProductToCart = (product: ApiProduct, quantity = 1) => {
+    const existing = cartItems.find((item) => item.id === product.id)
+    if (existing) {
       setCartItems(
         cartItems.map((item) =>
           item.id === product.id
@@ -132,65 +223,47 @@ export default function NuevaVentaPage() {
                 quantity: item.quantity + quantity,
                 subtotal: Number(((item.quantity + quantity) * item.price).toFixed(2)),
               }
-            : item,
-        ),
+            : item
+        )
       )
     } else {
-      // Si es un producto nuevo, agregarlo al carrito
       setCartItems([
         ...cartItems,
         {
           id: product.id,
           name: product.name,
-          price: product.price,
-          quantity: quantity,
-          subtotal: Number((quantity * product.price).toFixed(2)),
+          price: Number(product.price),
+          quantity,
+          subtotal: Number((quantity * Number(product.price)).toFixed(2)),
         },
       ])
     }
-
     setShowProductDialog(false)
-    setSelectedProduct(null)
     setSearchTerm("")
   }
 
-  // Función para actualizar la cantidad de un producto
   const updateQuantity = (id: number, newQuantity: number) => {
     if (newQuantity < 1) return
-
     setCartItems(
-      cartItems.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            quantity: newQuantity,
-            subtotal: Number((item.price * newQuantity).toFixed(2)),
-          }
-        }
-        return item
-      }),
+      cartItems.map((item) =>
+        item.id === id
+          ? { ...item, quantity: newQuantity, subtotal: Number((item.price * newQuantity).toFixed(2)) }
+          : item
+      )
     )
   }
 
-  // Función para eliminar un producto
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
-  }
+  const removeItem = (id: number) => setCartItems(cartItems.filter((item) => item.id !== id))
 
-  // Calcular subtotal
-  const calculateSubtotal = () => {
-    return Number(cartItems.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2))
-  }
+  const calculateSubtotal = () => Number(cartItems.reduce((s, i) => s + i.subtotal, 0).toFixed(2))
+  const calculateTaxes = () => Number((calculateSubtotal() * 0.16).toFixed(2))
+  const calculateTotal = () => Number((calculateSubtotal() + calculateTaxes()).toFixed(2))
 
-  // Calcular impuestos (16%)
-  const calculateTaxes = () => {
-    return Number((calculateSubtotal() * 0.16).toFixed(2))
-  }
+  // ──────────────────────────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────────────────────────
 
-  // Calcular total
-  const calculateTotal = () => {
-    return Number((calculateSubtotal() + calculateTaxes()).toFixed(2))
-  }
+  const selectedClientId = form.watch("clientId")
 
   return (
     <div className="space-y-6">
@@ -205,75 +278,145 @@ export default function NuevaVentaPage() {
           <h2 className="text-2xl font-heading">Nueva Venta</h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => form.reset()}>
+          <Button variant="outline" onClick={() => router.push("/admin/ventas")}>
             Cancelar
           </Button>
-          <Button onClick={form.handleSubmit(onSubmit)}>Completar Venta</Button>
+          <Button onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando…
+              </>
+            ) : (
+              "Completar Venta"
+            )}
+          </Button>
         </div>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* ── Columna izquierda ── */}
             <div className="md:col-span-2 space-y-6">
+              {/* Información del cliente */}
               <Card>
                 <CardHeader>
                   <CardTitle>Información del Cliente</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Combobox de búsqueda de cliente */}
                   <div className="space-y-2">
-                    <Label htmlFor="client-search">Buscar Cliente</Label>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="client-search" placeholder="Nombre o teléfono del cliente" className="pl-8" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="clientName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nombre</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nombre completo" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="clientPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Teléfono</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Número de teléfono" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="clientEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correo Electrónico (opcional)</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="correo@ejemplo.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    <Label htmlFor="client-search-btn">Buscar Cliente</Label>
+                    {customersError ? (
+                      <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        <span className="flex-1">⚠️ {customersError}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-auto py-0 px-1 text-xs"
+                          onClick={() => window.location.reload()}
+                        >
+                          Reintentar
+                        </Button>
+                      </div>
+                    ) : (
+                    <Popover open={clientComboOpen} onOpenChange={setClientComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="client-search-btn"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={clientComboOpen}
+                          className="w-full justify-between"
+                          disabled={customersLoading}
+                        >
+                          {customersLoading
+                            ? <span className="text-muted-foreground">Cargando clientes…</span>
+                            : selectedClientId
+                              ? customers.find((c) => c.id === selectedClientId)?.name ?? "Seleccionar cliente…"
+                              : "Seleccionar cliente…"}
+                          {customersLoading
+                            ? <Loader2 className="ml-2 h-4 w-4 animate-spin opacity-50" />
+                            : <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput id="client-search-input" name="client-search" placeholder="Buscar por nombre, teléfono o correo…" />
+                          <CommandList>
+                            <CommandEmpty>
+                              {"No se encontraron clientes."}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {customers.map((customer) => (
+                                <CommandItem
+                                  key={customer.id}
+                                  value={`${customer.name} ${customer.phone ?? ""} ${customer.email ?? ""}`}
+                                  onSelect={() => {
+                                    form.setValue("clientId", customer.id)
+                                    form.setValue("clientName", customer.name)
+                                    form.setValue("clientPhone", customer.phone ?? "")
+                                    form.setValue("clientEmail", customer.email ?? "")
+                                    setClientComboOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedClientId === customer.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{customer.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {customer.phone}{customer.email ? ` · ${customer.email}` : ""}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     )}
-                  />
+                    {form.formState.errors.clientId && (
+                      <p className="text-sm text-destructive">Selecciona un cliente registrado</p>
+                    )}
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      Solo puedes registrar ventas a clientes ya registrados en el sistema.
+                    </p>
+                  </div>
+
+                  {/* Datos del cliente (solo lectura, se rellenan al seleccionar) */}
+                  {selectedClientId && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Nombre</Label>
+                        <div className="px-3 py-2 text-sm border rounded-md bg-muted/30">
+                          {form.watch("clientName") || "—"}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Teléfono</Label>
+                        <div className="px-3 py-2 text-sm border rounded-md bg-muted/30">
+                          {form.watch("clientPhone") || "—"}
+                        </div>
+                      </div>
+                      <div className="space-y-1 md:col-span-2">
+                        <Label className="text-xs text-muted-foreground">Correo</Label>
+                        <div className="px-3 py-2 text-sm border rounded-md bg-muted/30">
+                          {form.watch("clientEmail") || "—"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Productos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Productos</CardTitle>
@@ -293,14 +436,19 @@ export default function NuevaVentaPage() {
                         <div className="relative">
                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder="Buscar productos..."
+                            placeholder="Buscar productos…"
                             className="pl-8"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                           />
                         </div>
                         <div className="max-h-[300px] overflow-auto border rounded-md">
-                          {filteredProducts.length > 0 ? (
+                          {productsLoading ? (
+                            <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Cargando productos…
+                            </div>
+                          ) : filteredProducts.length > 0 ? (
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -314,14 +462,19 @@ export default function NuevaVentaPage() {
                                 {filteredProducts.map((product) => (
                                   <TableRow key={product.id}>
                                     <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">${Number(product.price).toFixed(2)}</TableCell>
                                     <TableCell className="text-center">
                                       <Badge variant={product.stock > 5 ? "outline" : "secondary"}>
                                         {product.stock}
                                       </Badge>
                                     </TableCell>
                                     <TableCell>
-                                      <Button variant="ghost" size="sm" onClick={() => addProductToCart(product)}>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={product.stock === 0}
+                                        onClick={() => addProductToCart(product)}
+                                      >
                                         Añadir
                                       </Button>
                                     </TableCell>
@@ -336,7 +489,7 @@ export default function NuevaVentaPage() {
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setShowProductDialog(false)}>
-                          Cancelar
+                          Cerrar
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -408,7 +561,9 @@ export default function NuevaVentaPage() {
               </Card>
             </div>
 
+            {/* ── Columna derecha ── */}
             <div className="space-y-6">
+              {/* Resumen */}
               <Card>
                 <CardHeader>
                   <CardTitle>Resumen de Venta</CardTitle>
@@ -432,11 +587,13 @@ export default function NuevaVentaPage() {
                 </CardContent>
               </Card>
 
+              {/* Detalles de pago */}
               <Card>
                 <CardHeader>
                   <CardTitle>Detalles de Pago</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Fecha */}
                   <FormField
                     control={form.control}
                     name="date"
@@ -447,13 +604,13 @@ export default function NuevaVentaPage() {
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
-                                variant={"outline"}
+                                variant="outline"
                                 className={cn(
                                   "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground",
+                                  !field.value && "text-muted-foreground"
                                 )}
                               >
-                                {field.value ? format(field.value) : <span>Seleccionar fecha</span>}
+                                {field.value ? formatDate(field.value) : <span>Seleccionar fecha</span>}
                                 <Calendar className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
@@ -462,13 +619,13 @@ export default function NuevaVentaPage() {
                             <CalendarComponent
                               mode="single"
                               selected={field.value}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setDate(date)
-                                  field.onChange(date)
+                              onSelect={(d) => {
+                                if (d) {
+                                  setDate(d)
+                                  field.onChange(d)
                                 }
                               }}
-                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                              disabled={(d) => d > new Date() || d < new Date("1900-01-01")}
                               initialFocus
                             />
                           </PopoverContent>
@@ -478,6 +635,7 @@ export default function NuevaVentaPage() {
                     )}
                   />
 
+                  {/* Método de pago */}
                   <FormField
                     control={form.control}
                     name="paymentMethod"
@@ -502,6 +660,7 @@ export default function NuevaVentaPage() {
                     )}
                   />
 
+                  {/* Estado de pago */}
                   <FormField
                     control={form.control}
                     name="paymentStatus"
@@ -525,6 +684,7 @@ export default function NuevaVentaPage() {
                     )}
                   />
 
+                  {/* Notas */}
                   <FormField
                     control={form.control}
                     name="notes"
@@ -549,8 +709,11 @@ export default function NuevaVentaPage() {
   )
 }
 
-// Función para formatear fechas
-function format(date: Date) {
+// ──────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────
+
+function formatDate(date: Date) {
   return new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
     month: "2-digit",

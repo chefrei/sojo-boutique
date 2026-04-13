@@ -6,15 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart, Minus, Plus, Share2, ShoppingBag, Star, Loader2 } from "lucide-react"
+import { Heart, Minus, Plus, Share2, ShoppingBag, Star, Loader2, Check } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 import { useCart } from "@/contexts/cart-context"
+import { useAuth } from "@/contexts/auth-context"
+import { LoginDialog } from "@/components/login-dialog"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function ProductoPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
+  const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [isAdded, setIsAdded] = useState(false)
   const { addItem } = useCart()
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     async function loadProduct() {
@@ -45,14 +52,27 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
     return <div>Producto no encontrado</div>
   }
 
-  const handleAddToCart = () => {
-    addItem({
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true)
+      return
+    }
+
+    const success = await addItem({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity: quantity,
       image_url: product.image_url
     })
+
+    if (success) {
+      setIsAdded(true)
+      toast({ title: "Producto agregado", description: `${product.name} añadido al carrito.` })
+      setTimeout(() => setIsAdded(false), 2000)
+    } else {
+      toast({ title: "Error", description: "No se pudo añadir al carrito", variant: "destructive" })
+    }
   }
 
   // Productos relacionados
@@ -141,19 +161,26 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
                       variant="outline" 
                       size="icon" 
                       className="rounded-l-none"
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(quantity + 1)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
-                    <div className="ml-4 text-sm text-muted-foreground">{product.stock} disponibles</div>
+                    <div className="ml-4 text-sm text-muted-foreground">
+                      {product.stock > 0 
+                        ? `${product.stock} disponibles` 
+                        : "Disponible bajo pedido (se solicitará a proveedor)"}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <Button size="lg" className="flex-1" onClick={handleAddToCart}>
-                  <ShoppingBag className="mr-2 h-5 w-5" />
-                  Añadir al Carrito
+                <Button size="lg" className="flex-1" onClick={handleAddToCart} variant={isAdded ? "secondary" : "default"}>
+                  {isAdded ? (
+                    <><Check className="mr-2 h-5 w-5" /> Añadido</>
+                  ) : (
+                    <><ShoppingBag className="mr-2 h-5 w-5" /> Añadir al Carrito</>
+                  )}
                 </Button>
                 <Button size="lg" variant="outline" className="flex-1 sm:flex-none">
                   <Heart className="mr-2 h-5 w-5" />
@@ -184,6 +211,12 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </main>
+      <LoginDialog 
+        open={showLoginDialog} 
+        onOpenChange={setShowLoginDialog} 
+        message="Inicia sesión para añadir productos a tu carrito de compras."
+      />
+      <Toaster />
     </div>
   )
 }

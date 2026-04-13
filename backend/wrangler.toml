@@ -10,3 +10,8 @@ ENVIRONMENT = "production"
 binding = "sojo_boutique_db"
 database_name = "sojo-boutique-db"
 database_id = "bbfa58fa-4977-4547-b856-55c40f45e922"
+
+# --- ALMACENAMIENTO R2 (Descomentar cuando tengas acceso) ---
+# [[r2_buckets]]
+# binding = 'R2_BUCKET'
+# bucket_name = 'sojo-boutique-images'

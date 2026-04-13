@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Download, MoreHorizontal, Plus, Search, Loader2 } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, Loader2, FileText, FileSpreadsheet } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiFetch } from "@/lib/api"
+import { exportToCSV, exportToPDF } from "@/lib/exportUtils"
+import { useSettings } from "@/contexts/settings-context"
+import { toast } from "@/components/ui/use-toast"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function DeudasPage() {
+  const { settings } = useSettings()
   const [debtors, setDebtors] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -42,6 +46,33 @@ export default function DeudasPage() {
   const totalOverdue = 0 // Requiere cálculo de fechas en backend
   const totalPaid = debtors.reduce((sum, d) => sum + Number(d.total_paid || 0), 0)
 
+  const handleExportCSV = () => {
+    const headers = ["Cliente", "Email", "Pedidos Realizados ($)", "Monto Pagado ($)", "Deuda Restante ($)", "Estado"]
+    const rows = debtors.map(d => [
+      d.full_name,
+      d.email || "—",
+      d.total_orders,
+      d.total_paid,
+      d.balance,
+      "Pendiente"
+    ])
+    exportToCSV("deudas_soho", headers, rows)
+  }
+
+  const handleExportPDF = () => {
+    const headers = ["Cliente", "Email", "Pedidos", "Pagado", "Deuda", "Estado"]
+    const rows = debtors.map(d => [
+      `<b>${d.full_name}</b>`,
+      d.email || "—",
+      `$${Number(d.total_orders).toFixed(2)}`,
+      `$${Number(d.total_paid).toFixed(2)}`,
+      `$${Number(d.balance).toFixed(2)}`,
+      "Deudor"
+    ])
+    
+    exportToPDF("Reporte de Deudas", "Estado de cuenta por cobrar", headers, rows, toast, settings)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -50,10 +81,27 @@ export default function DeudasPage() {
           <p className="text-muted-foreground">Gestiona las deudas de tus clientes</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="hidden sm:flex">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Reporte
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Selecciona formato</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4 text-red-600" />
+                Descargar PDF (Listo para imprimir)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer">
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+                Descargar CSV (Para Excel)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button asChild>
             <Link href="/admin/deudas/nueva">
               <Plus className="mr-2 h-4 w-4" />

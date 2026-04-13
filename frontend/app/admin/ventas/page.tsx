@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Download, MoreHorizontal, Plus, Search, Loader2 } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, Loader2, FileText, FileSpreadsheet } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiFetch } from "@/lib/api"
+import { exportToCSV, exportToPDF } from "@/lib/exportUtils"
+import { useSettings } from "@/contexts/settings-context"
+import { toast } from "@/components/ui/use-toast"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 
 export default function VentasPage() {
+  const { settings } = useSettings()
   const [sales, setSales] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -38,10 +42,57 @@ export default function VentasPage() {
     }
     loadSales()
   }, [])
+  const [isUpdating, setIsUpdating] = useState<number | null>(null)
+
   // Calcular totales
   const totalVentas = sales.reduce((sum, sale) => sum + Number(sale.total || sale.total_price || 0), 0)
   const ventasCompletadas = sales.filter((sale) => sale.estado === "Completado" || sale.payment_status === "paid").length
-  const ventasPendientes = sales.filter((sale) => sale.estado !== "Completado" && sale.payment_status !== "paid").length
+  const ventasPendientes = sales.filter((sale) => sale.estado !== "Completado" && sale.payment_status !== "paid" && sale.estado !== "Cancelado").length
+
+  async function cancelOrder(id: number) {
+    if (!confirm("¿Estás seguro de anular esta venta? El stock será restaurado.")) return;
+    try {
+      setIsUpdating(id)
+      await apiFetch(`/orders/${id}/cancel`, {
+        method: "PUT"
+      })
+      // reload
+      const data = await apiFetch<any[]>("/admin/orders")
+      setSales(data)
+    } catch (error: any) {
+      console.error("Error al cancelar venta", error)
+      alert(error.message || "No se pudo anular la venta")
+    } finally {
+      setIsUpdating(null)
+    }
+  }
+
+  const handleExportCSV = () => {
+    const headers = ["ID", "Cliente", "Fecha", "Método", "Total", "Estado"]
+    const rows = sales.map(s => [
+      s.id,
+      s.cliente || "Consumidor Final",
+      s.fecha,
+      s.payment_method || "Efectivo",
+      s.total,
+      s.estado
+    ])
+    exportToCSV("ventas_soho", headers, rows)
+  }
+
+  const handleExportPDF = () => {
+    const headers = ["Venta ID", "Cliente", "Fecha", "Método de Pago", "Total", "Estado"]
+    const rows = sales.map(s => [
+      `<b>${s.id}</b>`,
+      s.cliente || "Consumidor Final",
+      s.fecha,
+      s.payment_method || "Efectivo",
+      `$${Number(s.total).toFixed(2)}`,
+      s.estado
+    ])
+    
+    exportToPDF("Reporte de Ventas", "Listado de ventas registradas", headers, rows, toast, settings)
+  }
 
   return (
     <div className="space-y-6">
@@ -51,10 +102,27 @@ export default function VentasPage() {
           <p className="text-muted-foreground">Gestiona y analiza tus ventas</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="sm:size-default">
-            <Download className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Reporte
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Selecciona formato</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4 text-red-600" />
+                Descargar PDF (Listo para imprimir)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer">
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+                Descargar CSV (Para Excel)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button size="sm" className="sm:size-default" asChild>
             <Link href="/admin/ventas/nueva">
               <Plus className="mr-2 h-4 w-4" />
@@ -184,9 +252,14 @@ export default function VentasPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>Ver detalles</DropdownMenuItem>
                           <DropdownMenuItem>Imprimir factura</DropdownMenuItem>
-                          <DropdownMenuItem>Editar</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">Anular venta</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive font-medium"
+                            onClick={() => cancelOrder(sale.db_id || sale.id)}
+                            disabled={sale.estado === "Cancelado" || sale.estado === "Completado" || isUpdating === (sale.db_id || sale.id)}
+                          >
+                            Anular venta
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

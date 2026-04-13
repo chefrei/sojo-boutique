@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils"
 import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useSettings } from "@/contexts/settings-context"
 
 interface AdminLayoutProps {
   children: ReactNode
@@ -40,6 +41,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth()
+  const { settings } = useSettings()
   const router = useRouter()
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -67,11 +69,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: "Clientes",
       icon: Users,
       href: "/admin/clientes",
-    },
-    {
-      label: "Inventario",
-      icon: Box,
-      href: "/admin/inventario",
     },
     {
       label: "Ventas",
@@ -111,12 +108,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         routes={routes}
         onLogout={handleLogout}
         user={user}
+        settings={settings}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         pathname={pathname}
       />
       <div className="flex flex-1">
-        <DesktopSidebar routes={routes} onLogout={handleLogout} pathname={pathname} />
+        <DesktopSidebar routes={routes} onLogout={handleLogout} settings={settings} pathname={pathname} />
         <div className="flex flex-col flex-1">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
             <div className="flex-1 flex items-center gap-4">
@@ -126,8 +124,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder-user.jpg" alt={user?.name || "Admin"} />
-                    <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
+                    <AvatarImage src="/placeholder-user.jpg" alt={user?.full_name || "Admin"} />
+                    <AvatarFallback>{user?.full_name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -162,6 +160,7 @@ function MobileAdminNav({
   routes,
   onLogout,
   user,
+  settings,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
   pathname,
@@ -169,6 +168,7 @@ function MobileAdminNav({
   routes: any[]
   onLogout: () => void
   user: any
+  settings: any
   isMobileMenuOpen: boolean
   setIsMobileMenuOpen: (open: boolean) => void
   pathname: string
@@ -186,7 +186,7 @@ function MobileAdminNav({
           <SheetContent side="left" className="w-[80%] max-w-[300px] p-0">
             <div className="flex h-14 items-center border-b px-4">
               <Logo size="sm" />
-              <span className="ml-2 text-lg font-heading">Admin</span>
+              <span className="ml-2 text-lg font-heading truncate">{settings?.business_name || "Admin"}</span>
               <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setIsMobileMenuOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
@@ -216,14 +216,14 @@ function MobileAdminNav({
           </SheetContent>
         </Sheet>
         <Logo size="sm" />
-        <span className="ml-2 text-lg font-heading">Admin</span>
+        <span className="ml-2 text-lg font-heading truncate">{settings?.business_name || "Admin"}</span>
         <div className="ml-auto flex items-center gap-2">
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
             Ver Tienda
           </Link>
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" alt={user?.name || "Admin"} />
-            <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
+            <AvatarImage src="/placeholder-user.jpg" alt={user?.full_name || "Admin"} />
+            <AvatarFallback>{user?.full_name?.substring(0, 2).toUpperCase() || "AD"}</AvatarFallback>
           </Avatar>
         </div>
       </div>
@@ -231,12 +231,12 @@ function MobileAdminNav({
   )
 }
 
-function DesktopSidebar({ routes, onLogout, pathname }: { routes: any[]; onLogout: () => void; pathname: string }) {
+function DesktopSidebar({ routes, onLogout, settings, pathname }: { routes: any[]; onLogout: () => void; settings: any; pathname: string }) {
   return (
     <aside className="hidden md:block border-r bg-muted/40 w-64 flex-shrink-0 overflow-y-auto">
       <div className="flex h-16 items-center border-b px-4">
         <Logo size="sm" />
-        <span className="ml-2 text-lg font-heading">Admin</span>
+        <span className="ml-2 text-lg font-heading truncate">{settings?.business_name || "Admin"}</span>
       </div>
       <nav className="grid gap-1 p-2">
         {routes.map((route) => (

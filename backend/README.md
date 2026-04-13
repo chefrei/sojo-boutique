@@ -29,16 +29,20 @@ Este es el backend de alto rendimiento y **costo cero** para el marketplace Soho
    La API estará disponible en `http://127.0.0.1:8000`.
    Puedes ver la documentación interactiva en `http://127.0.0.1:8000/docs`.
 
-## 🔒 Credenciales de Prueba (Default)
-- **Admin:** `admin@sojaboutique.com` / `admin123`
-- **Cliente con Deuda:** `maria@ejemplo.com` / `cliente123` (Debe $100 de un pedido de $150).
+## 📊 Endpoints Destacados
 
-## 📊 Endpoints Administrativos Destacados
-- `GET /api/v1/admin/dashboard`: Resumen de ventas totales vs cobros reales.
-- `GET /api/v1/admin/debtors`: Lista de clientes que tienen saldos pendientes.
-- `POST /api/v1/admin/payments`: Registrar un nuevo abono de un cliente.
-- `GET /api/v1/admin/orders`: Listado global de todos los pedidos realizados.
-- `PATCH /api/v1/admin/orders/{id}`: Gestionar estado de envío y pago de un pedido.
+### Configuración de Marca (Settings)
+- `GET /api/v1/settings`: Obtener la configuración visual y corporativa actual.
+- `PATCH /api/v1/settings`: Actualizar branding, colores y datos del negocio.
+
+### Inteligencia de Negocios (Reports)
+- `GET /api/v1/reports/customers/{id}/kardex`: Estado de cuenta histórico de un cliente.
+- `GET /api/v1/reports/finance/summary`: Resumen de salud financiera por rango de fechas.
+
+### Otros Endpoints Administrativos
+- `GET /api/v1/admin/dashboard`: Estadísticas rápidas de hoy.
+- `GET /api/v1/customers`: Gestión de perfiles y deudas de clientes.
+- `POST /api/v1/upload`: Carga de imágenes para productos y logos.
 
 ## 🛒 Endpoints del Marketplace (Cliente)
 - `POST /api/v1/orders/`: Crear un pedido nuevo (descuenta stock automáticamente).

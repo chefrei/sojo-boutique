@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Download, MoreHorizontal, Plus, Search, Loader2, Trash2, DollarSign } from "lucide-react"
+import { Download, MoreHorizontal, Plus, Search, Loader2, Trash2, DollarSign, FileText, FileSpreadsheet } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { apiFetch } from "@/lib/api"
+import { exportToCSV, exportToPDF } from "@/lib/exportUtils"
+import { useSettings } from "@/contexts/settings-context"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 
@@ -44,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 export default function ClientesPage() {
   const router = useRouter()
+  const { settings } = useSettings()
   const [clients, setClients] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -150,6 +153,40 @@ export default function ClientesPage() {
     return result
   }, [clients, search, statusFilter, sortBy])
 
+  const handleExportCSV = () => {
+    const headers = ["Nombre", "Teléfono", "Email", "Ventas", "Última Compra", "Deuda ($)", "Estado"]
+    const rows = filteredClients.map(c => [
+      c.name,
+      c.phone || "—",
+      c.email || "—",
+      c.compras,
+      c.ultimaCompra ? formatDate(c.ultimaCompra) : "—",
+      c.deuda,
+      c.status === "active" ? "Activo" : "Inactivo"
+    ])
+    exportToCSV("clientes_soho", headers, rows)
+  }
+
+  const handleExportPDF = () => {
+    const headers = ["Nombre", "Teléfono", "Email", "Ventas", "Última Compra", "Deuda", "Estado"]
+    const rows = filteredClients.map(c => [
+      `<b>${c.name}</b>`,
+      c.phone || "—",
+      c.email || "—",
+      `${c.compras}`,
+      c.ultimaCompra ? formatDate(c.ultimaCompra) : "—",
+      c.deuda > 0 ? `$${Number(c.deuda).toFixed(2)}` : "$0.00",
+      c.status === "active" ? "Activo" : "Inactivo"
+    ])
+    
+    let subtitle = "Todos los clientes"
+    if (statusFilter === "active") subtitle = "Clientes Activos"
+    if (statusFilter === "inactive") subtitle = "Clientes Inactivos"
+    if (search) subtitle += ` | Búsqueda: "${search}"`
+
+    exportToPDF("Reporte de Clientes", subtitle, headers, rows, toast, settings)
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -159,10 +196,27 @@ export default function ClientesPage() {
           <p className="text-muted-foreground">Gestiona la información de tus clientes</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="hidden sm:flex">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Reporte
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Selecciona formato</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4 text-red-600" />
+                Descargar PDF (Listo para imprimir)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer">
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+                Descargar CSV (Para Excel)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button asChild>
             <Link href="/admin/clientes/nuevo">
               <Plus className="mr-2 h-4 w-4" />

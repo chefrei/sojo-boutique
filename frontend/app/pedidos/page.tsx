@@ -4,31 +4,59 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Heart, Settings, User, Eye, Loader2 } from "lucide-react"
+import { ShoppingBag, Heart, Settings, User, Eye, Ban } from "lucide-react"
 import Link from "next/link"
 import { apiFetch } from "@/lib/api"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function PedidosPage() {
   const { user } = useAuth()
   const [pedidos, setPedidos] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [orderToCancel, setOrderToCancel] = useState<number | null>(null)
+
+  async function loadPedidos() {
+    try {
+      const data = await apiFetch<any[]>("/orders/me")
+      setPedidos(data)
+    } catch (err) {
+      console.error("Error al cargar pedidos:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadPedidos() {
-      try {
-        const data = await apiFetch<any[]>("/orders/me")
-        setPedidos(data)
-      } catch (err) {
-        console.error("Error al cargar pedidos:", err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
     if (user) loadPedidos()
   }, [user])
+
+  const handleCancelOrder = async () => {
+    if (orderToCancel === null) return
+    
+    try {
+      await apiFetch(`/orders/${orderToCancel}/cancel`, { method: "PUT" })
+      toast({ title: "Pedido cancelado", description: "Tu pedido fue cancelado exitosamente y tu carrito está limpio." })
+      await loadPedidos()
+    } catch (error: any) {
+      toast({ title: "No se pudo cancelar", description: error.message, variant: "destructive" })
+    } finally {
+      setOrderToCancel(null)
+    }
+  }
 
   if (!user) {
     return null
@@ -43,6 +71,15 @@ export default function PedidosPage() {
       "cancelled": "Cancelado"
     }
     return labels[status] || status
+  }
+
+  // Verifica si el pedido está pendiente y tiene menos de 1 hora
+  const canBeCancelled = (pedido: any) => {
+    if (pedido.status !== "pending") return false
+    const orderDate = new Date(pedido.created_at)
+    const now = new Date()
+    const diffHours = (now.getTime() - orderDate.getTime()) / (1000 * 60 * 60)
+    return diffHours < 1
   }
 
   return (
@@ -119,12 +156,25 @@ export default function PedidosPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="sm" asChild>
-                                <Link href={`/pedidos/${pedido.id}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ver
-                                </Link>
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                {canBeCancelled(pedido) && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => setOrderToCancel(pedido.id)}
+                                  >
+                                    <Ban className="h-4 w-4 mr-1" />
+                                    Cancelar
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="sm" asChild>
+                                  <Link href={`/pedidos/${pedido.id}`}>
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Ver
+                                  </Link>
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -144,6 +194,26 @@ export default function PedidosPage() {
           </div>
         </div>
       </main>
+      <AlertDialog open={orderToCancel !== null} onOpenChange={(open) => !open && setOrderToCancel(null)}>
+        <AlertDialogContent className="sm:max-w-md text-center border-none shadow-2xl bg-gradient-to-b from-white to-red-50/30 rounded-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto bg-red-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+              <Ban className="h-6 w-6 text-red-600" />
+            </div>
+            <AlertDialogTitle className="text-2xl font-serif text-slate-800">Cancelar Pedido</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-slate-600 mt-2">
+              ¿Estás seguro de que deseas cancelar este pedido? El stock volverá a estar disponible para el público.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-between flex-col sm:flex-row gap-3 mt-6">
+            <AlertDialogCancel className="w-full rounded-full mt-0">Mantener Pedido</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelOrder} className="w-full rounded-full shadow-md bg-red-600 hover:bg-red-700">
+              Sí, Cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Toaster />
     </div>
   )
 }

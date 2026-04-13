@@ -3,9 +3,11 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Edit, MoreHorizontal, Plus, Search, Trash2, Loader2 } from "lucide-react"
+import { Edit, MoreHorizontal, Plus, Search, Trash2, Loader2, Download, FileText, FileSpreadsheet } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiFetch } from "@/lib/api"
+import { exportToCSV, exportToPDF } from "@/lib/exportUtils"
+import { useSettings } from "@/contexts/settings-context"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import {
@@ -35,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function ProductosPage() {
   const router = useRouter()
+  const { settings } = useSettings()
   const [products, setProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -97,6 +100,49 @@ export default function ProductosPage() {
     return matchesSearch && matchesCategory && matchesStatus
   })
 
+  // Exportar a CSV nativo
+  const handleExportCSV = () => {
+    const headers = ["ID", "Nombre", "Categoría", "Precio ($)", "Stock", "Estado"]
+    const rows = filteredProducts.map(p => [
+      p.id,
+      p.name,
+      p.category?.name || "Sin categoría",
+      p.price,
+      p.stock,
+      getStatus(p.stock)
+    ])
+    exportToCSV("productos_soho", headers, rows)
+    toast({ title: "Exportación exitosa", description: "Tu reporte de Excel se descargó." })
+  }
+
+  // Exportar a PDF genérico
+  const handleExportPDF = () => {
+    const titleParts = []
+    if (categoryFilter !== "all") titleParts.push(`Categoría: ${categoryFilter}`)
+    if (statusFilter !== "all") {
+      if (statusFilter === "active") titleParts.push("Activos")
+      if (statusFilter === "low") titleParts.push("Bajo Stock")
+      if (statusFilter === "out") titleParts.push("Agotados")
+    }
+    if (search !== "") titleParts.push(`Búsqueda: "${search}"`)
+
+    const dynamicSubtitle = titleParts.length > 0 
+      ? `Filtros aplicados: ${titleParts.join(" | ")}` 
+      : "Listado completo de productos"
+
+    const headers = ["ID", "Nombre", "Categoría", "Precio", "Stock", "Estado"]
+    const rows = filteredProducts.map(p => [
+      p.id,
+      `<b>${p.name}</b>`,
+      p.category?.name || "N/A",
+      `$${Number(p.price).toFixed(2)}`,
+      `<b>${p.stock}</b>`,
+      getStatus(p.stock)
+    ])
+
+    exportToPDF("Inventario de Productos", dynamicSubtitle, headers, rows, toast, settings)
+  }
+
 
   return (
     <>
@@ -106,12 +152,35 @@ export default function ProductosPage() {
           <h2 className="text-2xl font-heading">Productos</h2>
           <p className="text-muted-foreground">Gestiona tu inventario de productos</p>
         </div>
-        <Button size="sm" className="sm:size-default" asChild>
-          <Link href="/admin/productos/nuevo">
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Nuevo Producto</span>
-          </Link>
-        </Button>
+        <div className="flex flex-row gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="hidden sm:flex">
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Reporte
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Selecciona formato</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                <FileText className="mr-2 h-4 w-4 text-red-600" />
+                Descargar PDF (Listo para imprimir)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer">
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+                Descargar CSV (Para Excel)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button size="sm" className="sm:size-default" asChild>
+            <Link href="/admin/productos/nuevo">
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Nuevo Producto</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">

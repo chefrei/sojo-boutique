@@ -10,14 +10,49 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Image from "next/image"
 import Link from "next/link"
-import { Heart, SlidersHorizontal, Loader2 } from "lucide-react"
+import { Heart, SlidersHorizontal, Loader2, ShoppingCart, Check } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { apiFetch } from "@/lib/api"
+import { useCart } from "@/contexts/cart-context"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { useAuth } from "@/contexts/auth-context"
+import { LoginDialog } from "@/components/login-dialog"
 
 export default function CatalogoPage() {
   const [products, setProducts] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [addedIds, setAddedIds] = useState<Set<number>>(new Set())
+  const { addItem } = useCart()
+
+  const { isAuthenticated } = useAuth()
+  const [showLoginDialog, setShowLoginDialog] = useState(false)
+
+  const handleAddToCart = async (product: any) => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true)
+      return
+    }
+
+    const success = await addItem({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      quantity: 1,
+      image_url: product.image_url,
+    })
+
+    if (success) {
+      setAddedIds((prev) => new Set(prev).add(product.id))
+      setTimeout(() => {
+        setAddedIds((prev) => { const s = new Set(prev); s.delete(product.id); return s })
+      }, 2000)
+      toast({ title: "Producto agregado", description: `${product.name} fue añadido al carrito.` })
+    } else {
+      toast({ title: "Error", description: "No se pudo añadir al carrito.", variant: "destructive" })
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -136,7 +171,7 @@ export default function CatalogoPage() {
             {products.map((product) => (
               <div
                 key={product.id}
-                className="group relative bg-background rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
+                className="group relative bg-background rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
                 <div className="absolute top-2 right-2 z-10">
                   <Button
@@ -148,7 +183,7 @@ export default function CatalogoPage() {
                     <span className="sr-only">Añadir a favoritos</span>
                   </Button>
                 </div>
-                <Link href={`/producto/${product.id}`}>
+                <Link href={`/producto/${product.id}`} className="flex-1">
                   <div className="aspect-square overflow-hidden">
                     <Image
                       src={product.image_url || "/placeholder.svg"}
@@ -158,7 +193,7 @@ export default function CatalogoPage() {
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 pb-2">
                     <div className="text-sm text-muted-foreground mb-1">
                       {product.category?.name || "Sin categoría"}
                     </div>
@@ -168,6 +203,21 @@ export default function CatalogoPage() {
                     <div className="font-semibold">${Number(product.price).toFixed(2)}</div>
                   </div>
                 </Link>
+                {/* Botón de añadir al carrito */}
+                <div className="px-4 pb-4">
+                  <Button
+                    size="sm"
+                    className="w-full gap-2 transition-all"
+                    variant={addedIds.has(product.id) ? "secondary" : "default"}
+                    onClick={() => handleAddToCart(product)}
+                  >
+                    {addedIds.has(product.id) ? (
+                      <><Check className="h-4 w-4" /> Añadido</>
+                    ) : (
+                      <><ShoppingCart className="h-4 w-4" /> Añadir al carrito</>
+                    )}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -179,6 +229,13 @@ export default function CatalogoPage() {
           )}
         </div>
       </main>
+      
+      <LoginDialog 
+        open={showLoginDialog} 
+        onOpenChange={setShowLoginDialog} 
+        message="Inicia sesión para añadir productos a tu carrito y disfrutar de Soho Boutique."
+      />
+      <Toaster />
     </div>
   )
 }

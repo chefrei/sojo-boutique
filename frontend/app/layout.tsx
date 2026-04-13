@@ -3,6 +3,7 @@ import { Mona_Sans as FontSans, Playfair_Display as FontHeading } from "next/fon
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { CartProvider } from "@/contexts/cart-context"
+import { SettingsProvider } from "@/contexts/settings-context"
 import { cn } from "@/lib/utils"
 import "@/app/globals.css"
 
@@ -32,11 +33,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontHeading.variable)} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </AuthProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              <CartProvider>
+                {children}
+              </CartProvider>
+            </AuthProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -25,6 +25,7 @@ class OrderBase(BaseModel):
 
 class OrderCreate(BaseModel):
     items: List[OrderItemCreate]
+    user_id: Optional[int] = None  # Solo usado por admins para asignar a un cliente
 
 class OrderRead(OrderBase):
     id: int

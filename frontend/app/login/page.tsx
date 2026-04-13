@@ -39,9 +39,14 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const success = await login(loginEmail, loginPassword)
-      if (success) {
-        router.push(redirect)
+      const userData = await login(loginEmail, loginPassword)
+      if (userData) {
+        // Redirigir según el rol del usuario
+        if (userData.role === "admin") {
+          router.push("/admin")
+        } else {
+          router.push(redirect === "/" ? "/" : redirect)
+        }
       } else {
         setError("Correo electrónico o contraseña incorrectos")
       }
