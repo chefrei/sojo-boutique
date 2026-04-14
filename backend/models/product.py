@@ -13,6 +13,7 @@ class Product(SQLModel, table=True):
     description: str = Field(nullable=False)
     price: Decimal = Field(default=0.0, decimal_places=2)
     stock: int = Field(default=0)
+    sku: Optional[str] = Field(default=None, unique=True, index=True)
     image_url: Optional[str] = Field(default=None)
     
     # Llave foránea a categoría

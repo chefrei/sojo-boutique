@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,20 +14,76 @@ import { LoginDialog } from "@/components/login-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 
-export default function ProductoPage({ params }: { params: { id: string } }) {
+export default function ProductoDetalle({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
+  const productId = resolvedParams.id
+  
   const [product, setProduct] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
-  const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isAdded, setIsAdded] = useState(false)
-  const { addItem } = useCart()
+  const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [inWishlist, setInWishlist] = useState(false)
+  
   const { isAuthenticated } = useAuth()
+  const { addItem } = useCart()
+
+  const isNewProduct = (dateStr: string) => {
+    if (!dateStr) return false
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays <= 30
+  }
+
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true)
+      return
+    }
+    try {
+      const res = await apiFetch<any>(`/wishlist/toggle/${product.id}`, { method: "POST" })
+      setInWishlist(res.action === "added")
+      toast({ 
+        title: res.action === "added" ? "Añadido a favoritos" : "Eliminado de favoritos",
+        description: `${product.name} ${res.action === "added" ? "ahora está" : "ya no está"} en tu lista de deseos.`
+      })
+    } catch (err) {
+      toast({ title: "Error", description: "No se pudo actualizar la lista de deseos.", variant: "destructive" })
+    }
+  }
+
+  const handleShare = async () => {
+    const shareData = {
+      title: `Soho Boutique - ${product.name}`,
+      text: product.description,
+      url: window.location.href,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        toast({ title: "Enlace copiado", description: "El enlace al producto se copió al portapapeles." })
+      }
+    } catch (err) {
+      console.error("Error al compartir:", err)
+    }
+  }
 
   useEffect(() => {
     async function loadProduct() {
       try {
-        const data = await apiFetch<any>(`/products/${params.id}`)
+        const data = await apiFetch<any>(`/products/${productId}`)
         setProduct(data)
+        
+        // Verificar si está en wishlist
+        if (isAuthenticated) {
+          const wishRes = await apiFetch<any>(`/wishlist/check/${productId}`)
+          setInWishlist(wishRes.inWishlist)
+        }
       } catch (err) {
         console.error("Error al cargar producto:", err)
       } finally {
@@ -35,7 +91,7 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
       }
     }
     loadProduct()
-  }, [params.id])
+  }, [productId, isAuthenticated])
 
   if (isLoading) {
     return (
@@ -138,7 +194,9 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-muted-foreground">(Nuevo)</span>
+                  {isNewProduct(product.created_at) && (
+                    <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ml-2">Nuevo</span>
+                  )}
                 </div>
               </div>
 
@@ -182,29 +240,27 @@ export default function ProductoPage({ params }: { params: { id: string } }) {
                     <><ShoppingBag className="mr-2 h-5 w-5" /> Añadir al Carrito</>
                   )}
                 </Button>
-                <Button size="lg" variant="outline" className="flex-1 sm:flex-none">
-                  <Heart className="mr-2 h-5 w-5" />
-                  <span className="sm:inline">Favoritos</span>
+                <Button 
+                  size="lg" 
+                  variant={inWishlist ? "secondary" : "outline"} 
+                  className="flex-1 sm:flex-none"
+                  onClick={handleToggleWishlist}
+                >
+                  <Heart className={`mr-2 h-5 w-5 ${inWishlist ? "fill-primary text-primary" : ""}`} />
+                  <span className="sm:inline">{inWishlist ? "En Favoritos" : "Favoritos"}</span>
                 </Button>
-                <Button size="lg" variant="ghost" className="sm:w-auto hidden sm:flex">
-                  <Share2 className="h-5 w-5" />
-                  <span className="sr-only">Compartir</span>
+                <Button size="lg" variant="ghost" className="sm:w-auto flex" onClick={handleShare}>
+                  <Share2 className="h-5 w-5 mr-2" />
+                  <span className="sm:hidden">Compartir</span>
                 </Button>
               </div>
 
               <Tabs defaultValue="description" className="pt-4">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-1">
                   <TabsTrigger value="description">Descripción</TabsTrigger>
-                  <TabsTrigger value="reviews">Reseñas</TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" className="pt-4">
-                  <p className="text-muted-foreground">{product.description || "Sin descripción disponible."}</p>
-                </TabsContent>
-                <TabsContent value="reviews" className="pt-4">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">Las reseñas estarán disponibles próximamente</p>
-                    <Button variant="outline">Escribir una Reseña</Button>
-                  </div>
+                  <p className="text-muted-foreground leading-relaxed">{product.description || "Sin descripción disponible."}</p>
                 </TabsContent>
               </Tabs>
             </div>

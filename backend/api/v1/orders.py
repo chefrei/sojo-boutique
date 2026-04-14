@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select, func
 from typing import List
 from db import get_session
 from models.user import User
@@ -27,7 +28,10 @@ def create_order(
         target_user_id = order_in.user_id
 
     # 1. Crear la orden base
-    db_order = Order(user_id=target_user_id, total_price=Decimal("0.0"))
+    count = session.exec(select(func.count(Order.id))).one()
+    generated_ref = f"PED-{(count + 1):06d}"
+    
+    db_order = Order(user_id=target_user_id, total_price=Decimal("0.0"), reference=generated_ref)
     session.add(db_order)
     session.flush() # Para obtener el ID del pedido
     
@@ -79,7 +83,13 @@ def read_my_orders(
     *, session: Session = Depends(get_session),
     current_user: User = Depends(get_current_active_user)
 ):
-    statement = select(Order).where(Order.user_id == current_user.id).order_by(Order.created_at.desc())
+    # Usamos selectinload para cargar relaciones de forma eficiente
+    statement = (
+        select(Order)
+        .where(Order.user_id == current_user.id)
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .order_by(Order.created_at.desc())
+    )
     orders = session.exec(statement).all()
     return orders
 
@@ -89,14 +99,20 @@ def read_order(
     id: int,
     current_user: User = Depends(get_current_active_user)
 ):
-    order = session.get(Order, id)
+    statement = (
+        select(Order)
+        .where(Order.id == id)
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+    )
+    order = session.exec(statement).first()
+    
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
         
     # Verificar que el pedido pertenezca al usuario (o sea admin)
     if order.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="No tienes permiso para ver este pedido")
-        
+    
     return order
 
 @router.put("/{id}/cancel", response_model=OrderRead)

@@ -85,6 +85,7 @@ export default function ProductosPage() {
   const filteredProducts = products.filter((p) => {
     const matchesSearch = search === "" ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.sku || "").toLowerCase().includes(search.toLowerCase()) ||
       (p.category?.name || "").toLowerCase().includes(search.toLowerCase())
 
     const matchesCategory = categoryFilter === "all" ||
@@ -231,6 +232,7 @@ export default function ProductosPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[80px]">Imagen</TableHead>
+                <TableHead className="w-[120px]">SKU</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead className="hidden md:table-cell">Categoría</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
@@ -260,6 +262,7 @@ export default function ProductosPage() {
                           className="aspect-square rounded-md object-cover"
                         />
                       </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{product.sku || "N/A"}</TableCell>
                       <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{product.category?.name || "Sin categoría"}</TableCell>
                       <TableCell className="text-right">${Number(product.price).toFixed(2)}</TableCell>

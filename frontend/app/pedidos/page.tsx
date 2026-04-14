@@ -107,10 +107,6 @@ export default function PedidosPage() {
                     <Heart className="h-4 w-4" />
                     Favoritos
                   </Link>
-                  <Link href="/cuenta/configuracion" className="flex items-center gap-2 p-3 hover:bg-muted">
-                    <Settings className="h-4 w-4" />
-                    Configuración
-                  </Link>
                 </nav>
               </CardContent>
             </Card>
@@ -138,7 +134,7 @@ export default function PedidosPage() {
                       <TableBody>
                         {pedidos.map((pedido) => (
                           <TableRow key={pedido.id}>
-                            <TableCell className="font-medium">#{pedido.id}</TableCell>
+                            <TableCell className="font-medium">{pedido.reference || `#${pedido.id}`}</TableCell>
                             <TableCell>{formatDate(pedido.created_at)}</TableCell>
                             <TableCell className="text-center">{pedido.items?.length || 0}</TableCell>
                             <TableCell className="text-right">${Number(pedido.total_price).toFixed(2)}</TableCell>

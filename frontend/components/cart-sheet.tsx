@@ -188,50 +188,47 @@ export function CartSheet({ children }: CartSheetProps) {
 
           {/* Footer */}
           {items.length > 0 && (
-            <SheetFooter className="flex-col px-6 pt-4 pb-6 border-t gap-3">
-              <div className="w-full space-y-1.5">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>${totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Envío</span>
-                  <span className="text-green-600 font-medium">Gratis</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between font-semibold text-base">
+            <SheetFooter className="flex-col px-6 pt-4 pb-6 border-t gap-3 sm:flex-col">
+              <div className="w-full space-y-1.5 mb-2">
+                <div className="flex justify-between text-base font-semibold">
                   <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span className="text-primary">${totalPrice.toFixed(2)}</span>
                 </div>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Envío gratis en todos tus pedidos de Soho Boutique
+                </p>
               </div>
 
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-              >
-                {isCheckingOut ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Procesando pedido…
-                  </>
-                ) : (
-                  <>
-                    Realizar Pedido
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-col gap-2 w-full">
+                <Button
+                  size="lg"
+                  className="w-full h-12 text-base font-bold"
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                >
+                  {isCheckingOut ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      Realizar Pedido
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-muted-foreground text-xs"
-                onClick={clearCart}
-              >
-                Vaciar carrito
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground hover:text-destructive transition-colors text-xs"
+                  onClick={clearCart}
+                >
+                  <Trash2 className="h-3 w-3 mr-2" />
+                  Vaciar mi carrito
+                </Button>
+              </div>
             </SheetFooter>
           )}
         </SheetContent>

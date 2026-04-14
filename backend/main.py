@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from db import init_db
-from api.v1 import auth, products, admin, orders, settings, reports
+from api.v1 import auth, products, admin, orders, settings, reports, wishlist
 
 # Configuración de compatibilidad para Cloudflare Workers
 try:
@@ -36,7 +36,7 @@ def on_startup():
 async def root():
     return {"message": "Bienvenido a la API de Soho Boutique", "status": "online"}
 
-from api.v1 import auth, products, admin, orders, upload, customers, cart, settings, reports
+from api.v1 import auth, products, admin, orders, upload, customers, cart, settings, reports, wishlist
 
 # Registro de routers v1
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -48,6 +48,7 @@ app.include_router(customers.router, prefix="/api/v1/customers", tags=["Customer
 app.include_router(cart.router, prefix="/api/v1/cart", tags=["Cart"])
 app.include_router(settings.router, prefix="/api/v1/settings", tags=["System Settings"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Business Intelligence"])
+app.include_router(wishlist.router, prefix="/api/v1/wishlist", tags=["Wishlist"])
 
 # Servir imágenes estáticas directamente desde el backend
 # Esto evita la necesidad de reiniciar Next.js para ver imágenes nuevas

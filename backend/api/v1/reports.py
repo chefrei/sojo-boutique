@@ -33,7 +33,7 @@ def get_customer_kardex(
         history.append({
             "date": order.created_at,
             "type": "Cargos (Pedido)",
-            "reference": f"PED-{order.id:03d}",
+            "reference": order.reference or f"PED-{order.id:06d}",
             "amount": float(order.total_price),
             "is_credit": False
         })
@@ -42,7 +42,7 @@ def get_customer_kardex(
         history.append({
             "date": payment.created_at,
             "type": "Abono",
-            "reference": f"Pago ID: {payment.id} ({payment.method})",
+            "reference": payment.reference or f"REC-{payment.id:06d}",
             "amount": float(payment.amount),
             "is_credit": True
         })
@@ -113,3 +113,69 @@ def get_finance_summary(
         "order_count": len(orders_in_range),
         "payment_count": len(payments_in_range)
     }
+
+@router.get("/finance/stats")
+def get_finance_stats(
+    *, session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """
+    Retorna estadísticas para el gráfico de barras del admin.
+    Ventas vs Cobranza por mes para los últimos 6 meses.
+    """
+    today = datetime.utcnow()
+    stats = []
+    
+    for i in range(5, -1, -1):
+        month_start = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1, hour=0, minute=0, second=0)
+        # Aproximación simple para fin de mes
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        
+        sales = session.exec(
+            select(func.sum(Order.total_price))
+            .where(Order.created_at >= month_start, Order.created_at < month_end, Order.status == OrderStatus.DELIVERED)
+        ).one() or 0
+        
+        collections = session.exec(
+            select(func.sum(Payment.amount))
+            .where(Payment.created_at >= month_start, Payment.created_at < month_end)
+        ).one() or 0
+        
+        stats.append({
+            "month": month_start.strftime("%b"),
+            "ventas": float(sales),
+            "recaudado": float(collections)
+        })
+        
+    return stats
+
+@router.get("/categories/stats")
+def get_category_stats(
+    *, session: Session = Depends(get_session),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """
+    Retorna distribución de ventas por categoría para el gráfico circular.
+    """
+    from models.category import Category
+    from models.product import Product
+    from models.order import OrderItem
+    
+    categories = session.exec(select(Category)).all()
+    stats = []
+    
+    for cat in categories:
+        # Sumar ventas de productos en esta categoría
+        volume = session.exec(
+            select(func.sum(OrderItem.unit_price * OrderItem.quantity))
+            .join(Product)
+            .where(Product.category_id == cat.id)
+        ).one() or 0
+        
+        if volume > 0:
+            stats.append({
+                "name": cat.name,
+                "value": float(volume)
+            })
+            
+    return stats

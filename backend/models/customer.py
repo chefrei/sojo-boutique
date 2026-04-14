@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 class CustomerProfile(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
+    customer_id: Optional[str] = Field(default=None, unique=True, index=True)
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None

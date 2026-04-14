@@ -13,11 +13,15 @@ import { Logo } from "@/components/ui/logo"
 import { UserAccountNav } from "@/components/user-account-nav"
 import { cn } from "@/lib/utils"
 
+import { useRouter } from "next/navigation"
+
 export function SiteHeader() {
+  const router = useRouter()
   const pathname = usePathname()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   // Detectar scroll para cambiar la apariencia del header
   useEffect(() => {
@@ -33,6 +37,14 @@ export function SiteHeader() {
     setIsMobileMenuOpen(false)
   }, [pathname])
 
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      router.push(`/catalogo?search=${encodeURIComponent(searchQuery.trim())}`)
+      setIsSearchOpen(false)
+      setSearchQuery("")
+    }
+  }
+
   const routes = [
     {
       href: "/",
@@ -43,21 +55,6 @@ export function SiteHeader() {
       href: "/catalogo",
       label: "Catálogo",
       active: pathname === "/catalogo",
-    },
-    {
-      href: "/prendas",
-      label: "Prendas",
-      active: pathname === "/prendas",
-    },
-    {
-      href: "/accesorios",
-      label: "Accesorios",
-      active: pathname === "/accesorios",
-    },
-    {
-      href: "/perfumes",
-      label: "Perfumes",
-      active: pathname === "/perfumes",
     },
   ]
 
@@ -123,11 +120,21 @@ export function SiteHeader() {
                 placeholder="Buscar productos..."
                 className="w-[150px] sm:w-[200px] md:w-[300px] pr-8"
                 autoFocus
-                onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+                onBlur={() => {
+                  if (!searchQuery) {
+                    setTimeout(() => setIsSearchOpen(false), 200)
+                  }
+                }}
               />
               <X
                 className="absolute right-2 h-4 w-4 cursor-pointer text-muted-foreground"
-                onClick={() => setIsSearchOpen(false)}
+                onClick={() => {
+                  setIsSearchOpen(false)
+                  setSearchQuery("")
+                }}
               />
             </div>
           ) : (

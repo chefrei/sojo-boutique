@@ -38,8 +38,38 @@ def register_payment(
     payment_in: PaymentCreate,
     current_admin: User = Depends(get_current_admin_user)
 ):
-    # 1. Crear el registro del pago
-    db_payment = Payment.model_validate(payment_in)
+    # Validar que el cliente tenga deuda antes de permitir el pago (Recomendación de pruebas.md)
+    total_orders = session.exec(
+        select(func.sum(Order.total_price))
+        .where(Order.user_id == payment_in.user_id)
+        .where(Order.status == OrderStatus.DELIVERED)
+    ).one() or Decimal("0.0")
+    
+    total_paid = session.exec(
+        select(func.sum(Payment.amount))
+        .where(Payment.user_id == payment_in.user_id)
+    ).one() or Decimal("0.0")
+    
+    balance = total_orders - total_paid
+    
+    if balance <= 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="El cliente no tiene deuda pendiente. No se puede registrar un pago."
+        )
+
+    # 1. Crear el registro del pago con referencia autogenerada
+    count = session.exec(select(func.count(Payment.id))).one()
+    generated_ref = f"REC-{(count + 1):06d}"
+
+    db_payment = Payment(
+        user_id=payment_in.user_id,
+        order_id=payment_in.order_id,
+        amount=payment_in.amount,
+        method=payment_in.method,
+        notes=payment_in.notes,
+        reference=generated_ref
+    )
     session.add(db_payment)
     
     # 2. Si el pago es para un pedido específico, actualizamos el estado del pedido
@@ -115,7 +145,7 @@ def get_all_orders(
         }
         
         result.append(OrderTableOut(
-            id=f"PED-{order.id:03d}",
+            id=order.reference or f"PED-{order.id:06d}",
             db_id=order.id,
             fecha=order.created_at.strftime("%Y-%m-%d"),
             cliente=order.user.full_name if order.user else "Cliente Desconocido",

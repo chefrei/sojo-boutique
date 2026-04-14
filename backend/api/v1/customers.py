@@ -115,8 +115,13 @@ def create_customer(
     session.commit()
     session.refresh(new_user)
     
+    # Generar customer_id secuencial
+    count = session.exec(select(func.count(User.id)).where(User.role == UserRole.CLIENT)).one()
+    generated_id = f"CL-{(count + 1):06d}"
+    
     new_profile = CustomerProfile(
         user_id=new_user.id,
+        customer_id=generated_id,
         phone=customer_in.phone,
         address=customer_in.address,
         city=customer_in.city,

@@ -45,12 +45,12 @@ export function exportToPDF(
         <style>
           @import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}&display=swap');
           body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
-          .header { text-align: center; border-bottom: 2px solid ${primaryColor}; padding-bottom: 20px; margin-bottom: 30px; }
-          .logo-container { margin-bottom: 10px; }
-          .logo-img { max-height: 60px; margin-bottom: 5px; }
-          .logo-text { font-family: '${headingFont}', cursive; font-size: 42px; font-weight: normal; color: ${primaryColor}; margin-bottom: 0px; }
-          .business-info { font-size: 12px; color: #666; line-height: 1.5; margin-top: -5px; }
-          .report-title { font-size: 22px; margin-top: 30px; margin-bottom: 5px; color: ${primaryColor}; }
+          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid ${primaryColor}; padding-bottom: 20px; margin-bottom: 30px; }
+          .logo-container { text-align: left; }
+          .logo-img { max-height: 80px; }
+          .logo-text { font-family: '${headingFont}', cursive; font-size: 38px; font-weight: normal; color: ${primaryColor}; margin: 0; }
+          .business-info { font-size: 11px; color: #666; line-height: 1.4; text-align: right; }
+          .report-title { font-size: 22px; margin-top: 10px; margin-bottom: 5px; color: ${primaryColor}; }
           .report-subtitle { font-size: 13px; color: #666; margin-bottom: 20px; font-style: italic; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
           th { background-color: ${headerBgColor}; text-align: left; padding: 12px 8px; border-bottom: 2px solid ${primaryColor}; font-weight: 600; color: #333; }
@@ -67,7 +67,10 @@ export function exportToPDF(
       <body>
         <div class="header">
           <div class="logo-container">
-            ${settings?.logo_url ? `<img src="${settings.logo_url}" class="logo-img" alt="logo" />` : `<div class="logo-text">${companyName}</div>`}
+            <div style="display: flex; align-items: center; gap: 15px;">
+              ${settings?.logo_url ? `<img src="${settings.logo_url}" class="logo-img" alt="logo" />` : ''}
+              <div class="logo-text">${companyName}</div>
+            </div>
           </div>
           <div class="business-info">
             ${companyAddress}<br/>

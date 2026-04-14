@@ -11,40 +11,28 @@ import { SiteHeader } from "@/components/site-header"
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+  const [dbCategories, setDbCategories] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchFeatured() {
+    async function fetchData() {
       try {
-        const data = await apiFetch<any[]>("/products/")
+        const [productsData, categoriesData] = await Promise.all([
+          apiFetch<any[]>("/products/", { auth: false }),
+          apiFetch<any[]>("/products/categories", { auth: false })
+        ])
         // Mostrar solo los primeros 4 productos como destacados
-        setFeaturedProducts(data.slice(0, 4))
+        setFeaturedProducts(productsData.slice(0, 4))
+        setDbCategories(categoriesData)
       } catch (error) {
-        console.error("Error al cargar productos destacados:", error)
+        console.error("Error al cargar datos de inicio:", error)
       } finally {
         setIsLoading(false)
       }
     }
-    fetchFeatured()
+    fetchData()
   }, [])
 
-  const categories = [
-    {
-      title: "Prendas",
-      image: "/placeholder.svg?height=600&width=400",
-      href: "/prendas",
-    },
-    {
-      title: "Accesorios",
-      image: "/placeholder.svg?height=600&width=400",
-      href: "/accesorios",
-    },
-    {
-      title: "Perfumes",
-      image: "/placeholder.svg?height=600&width=400",
-      href: "/perfumes",
-    },
-  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -97,28 +85,37 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {categories.map((category) => (
-              <Link key={category.title} href={category.href} className="group relative overflow-hidden rounded-lg">
+            {dbCategories.slice(0, 3).map((category) => (
+              <Link 
+                key={category.id} 
+                href={`/catalogo?search=${category.name}`} 
+                className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all"
+              >
                 <div className="aspect-[3/4] overflow-hidden rounded-lg">
                   <Image
-                    src={category.image || "/placeholder.svg"}
-                    alt={category.title}
+                    src={category.image_url || "/placeholder.svg"}
+                    alt={category.name}
                     width={400}
                     height={600}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6">
                   <div>
-                    <h3 className="font-heading text-2xl text-white mb-2">{category.title}</h3>
-                    <span className="inline-flex items-center text-white/90 text-sm">
-                      Explorar
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                    <h3 className="font-heading text-2xl text-white mb-2">{category.name}</h3>
+                    <span className="inline-flex items-center text-white/90 text-sm font-medium">
+                      Explorar colección
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </span>
                   </div>
                 </div>
               </Link>
             ))}
+            {dbCategories.length === 0 && !isLoading && (
+              <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                Configure sus categorías en el panel administrativo.
+              </div>
+            )}
           </div>
         </section>
 

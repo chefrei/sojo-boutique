@@ -13,6 +13,7 @@ class Payment(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     order_id: Optional[int] = Field(default=None, foreign_key="order.id")
+    reference: Optional[str] = Field(default=None, unique=True, index=True)
     
     amount: Decimal = Field(decimal_places=2)
     method: str = Field(index=True) # Zelle, Efectivo, Pago Movil, etc.

@@ -6,9 +6,10 @@ from enum import Enum
 from decimal import Decimal
 from datetime import datetime
 
+from .product import Product
+
 if TYPE_CHECKING:
     from .user import User
-    from .product import Product
     from .payment import Payment
 
 class OrderStatus(str, Enum):
@@ -35,10 +36,18 @@ class OrderItem(SQLModel, table=True):
     order: "Order" = Relationship(
         sa_relationship=sa_relationship("Order", back_populates="items")
     )
+    product: Product = Relationship(
+        sa_relationship=sa_relationship("Product")
+    )
+
+    @property
+    def product_name(self) -> Optional[str]:
+        return self.product.name if self.product else None
 
 class Order(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
+    reference: Optional[str] = Field(default=None, unique=True, index=True)
     total_price: Decimal = Field(default=0.0, decimal_places=2)
     amount_paid: Decimal = Field(default=0.0, decimal_places=2)
     status: OrderStatus = Field(default=OrderStatus.PENDING)

@@ -76,6 +76,19 @@ def create_product(
     current_admin: str = Depends(get_current_admin_user)
 ):
     db_product = Product.model_validate(product_in)
+    
+    # Auto-generar SKU si no viene provisto
+    if not db_product.sku:
+        category = session.get(Category, db_product.category_id)
+        prefix = "PROD"
+        if category:
+            # Tomar las primeras 3 letras de la categoría en mayúsculas
+            prefix = category.name[:3].upper()
+            
+        # Contar productos en esta categoría para el correlativo
+        count = session.exec(select(func.count(Product.id)).where(Product.category_id == db_product.category_id)).one()
+        db_product.sku = f"{prefix}-{(count + 1):06d}"
+        
     session.add(db_product)
     session.commit()
     session.refresh(db_product)

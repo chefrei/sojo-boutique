@@ -238,8 +238,9 @@ export default function NuevaVentaPage() {
         },
       ])
     }
-    setShowProductDialog(false)
     setSearchTerm("")
+    toast({ title: "Añadido", description: `${product.name} sumado a la venta.` })
+    // No cerramos el diálogo para permitir agregar múltiples productos rápidamente
   }
 
   const updateQuantity = (id: number, newQuantity: number) => {
@@ -433,13 +434,14 @@ export default function NuevaVentaPage() {
                         <DialogDescription>Busca y selecciona productos para añadir a la venta.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
-                        <div className="relative">
+                        <div className="relative mb-4">
                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder="Buscar productos…"
-                            className="pl-8"
+                            placeholder="Buscar por nombre o descripción..."
+                            className="pl-8 h-11"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
                           />
                         </div>
                         <div className="max-h-[300px] overflow-auto border rounded-md">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, User, Settings, ShoppingBag } from "lucide-react"
+import { LogOut, User, Heart, ShoppingBag } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -74,9 +74,9 @@ export function UserAccountNav() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/cuenta/configuracion">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configuración</span>
+          <Link href="/favoritos">
+            <Heart className="mr-2 h-4 w-4" />
+            <span>Favoritos</span>
           </Link>
         </DropdownMenuItem>
 

@@ -14,6 +14,7 @@ class OrderItemCreate(OrderItemBase):
 class OrderItemRead(OrderItemBase):
     id: int
     unit_price: Decimal
+    product_name: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -8,20 +8,39 @@ import { apiFetch } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { 
+  ResponsiveContainer, 
+  BarChart as ReBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from "recharts"
+
+const COLORS = ["#0f172a", "#334155", "#475569", "#64748b", "#94a3b8"]
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null)
   const [recentSales, setRecentSales] = useState<any[]>([])
   const [popularProducts, setPopularProducts] = useState<any[]>([])
+  const [financeStats, setFinanceStats] = useState<any[]>([])
+  const [categoryStats, setCategoryStats] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const [dashStats, orders, products] = await Promise.all([
+        const [dashStats, orders, products, finStats, catStats] = await Promise.all([
           apiFetch<any>("/admin/dashboard"),
           apiFetch<any[]>("/admin/orders?limit=5"),
-          apiFetch<any[]>("/products/") 
+          apiFetch<any[]>("/products/"),
+          apiFetch<any[]>("/reports/finance/stats"),
+          apiFetch<any[]>("/reports/categories/stats")
         ])
         
         // Add active products manually since it's not in the dashboard endpoint yet
@@ -29,8 +48,9 @@ export default function AdminDashboardPage() {
         
         setStats(dashStats)
         setRecentSales(orders)
-        // Sort products by some metric or just take top 5
         setPopularProducts(products.slice(0, 5))
+        setFinanceStats(finStats)
+        setCategoryStats(catStats)
       } catch (error) {
         console.error("Error fetching dashboard data:", error)
       } finally {
@@ -171,15 +191,58 @@ export default function AdminDashboardPage() {
           </div>
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Análisis de Ventas</CardTitle>
-              <CardDescription>Visualiza el rendimiento de tu negocio</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px] flex items-center justify-center">
-              <p className="text-muted-foreground">Los gráficos de análisis estarán disponibles próximamente</p>
-            </CardContent>
-          </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Rendimiento Mensual</CardTitle>
+                <CardDescription>Ventas vs Recaudación (últimos 6 meses)</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ReBarChart data={financeStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                      formatter={(value) => [`$${Number(value).toLocaleString()}`, ""]}
+                    />
+                    <Legend />
+                    <Bar dataKey="ventas" name="Ventas" fill="#0f172a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="recaudado" name="Recaudado" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                  </ReBarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle>Ventas por Categoría</CardTitle>
+                <CardDescription>Distribución del volumen de ventas</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {categoryStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="reports" className="space-y-4">
           <Card>
