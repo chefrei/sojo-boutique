@@ -1,4 +1,5 @@
 "use client"
+export const runtime = 'edge'
 
 import { useEffect, useState, use } from "react"
 import { useAuth } from "@/contexts/auth-context"
