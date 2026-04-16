@@ -1,0 +1,8 @@
+node_modules
+.dev.vars
+dist
+.wrangler
+.next
+.env*
+sync_production.sql
+fix_schema.sql

@@ -32,7 +32,7 @@ export function LoginDialog({ open, onOpenChange, message = "Inicia sesión para
           <div className="mx-auto bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
             <ShoppingBag className="h-6 w-6 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-serif text-slate-800">Soho Boutique</DialogTitle>
+          <DialogTitle className="text-2xl font-serif text-slate-800">Sojo Boutique</DialogTitle>
           <DialogDescription className="text-base text-slate-600 mt-2">
             {message}
           </DialogDescription>

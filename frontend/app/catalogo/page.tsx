@@ -404,7 +404,7 @@ function CatalogoContent() {
       <LoginDialog 
         open={showLoginDialog} 
         onOpenChange={setShowLoginDialog} 
-        message="Inicia sesión para añadir productos a tu carrito y disfrutar de Soho Boutique."
+        message="Inicia sesión para añadir productos a tu carrito y disfrutar de Sojo Boutique."
       />
       <Toaster />
     </div>

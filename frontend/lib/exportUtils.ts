@@ -27,10 +27,10 @@ export function exportToPDF(
   settings?: any
 ) {
   // Configuraciones del negocio (Valores por defecto si no vienen settings)
-  const companyName = settings?.business_name || "Soho Boutique"
+  const companyName = settings?.business_name || "Sojo Boutique"
   const companyAddress = settings?.address || "Av. Principal de las Mercedes, Caracas, Venezuela"
   const companyRif = `RIF: ${settings?.rif || "J-12345678-9"} | Tel: ${settings?.phone || "+58 412-1234567"}`
-  const companyContact = `${settings?.email || "contacto@sohoboutique.com"} | ${settings?.slogan || "@sohoboutique"}`
+  const companyContact = `${settings?.email || "contacto@sojaboutique.com"} | ${settings?.slogan || "@sojaboutique"}`
   
   // Convertir HSL a string CSS válido si es necesario, o usar directamente
   const primaryColor = settings?.primary_color ? `hsl(${settings.primary_color})` : "hsl(350, 65%, 65%)"
@@ -111,7 +111,7 @@ export function exportToPDF(
         </table>
         
         <div class="footer">
-          Reporte administrativo de uso interno. Generado automáticamente por el Sistema Soho.<br/>
+          Reporte administrativo de uso interno. Generado automáticamente por el Sistema Sojo.<br/>
           Total de registros: ${rows.length}
         </div>
       </body>

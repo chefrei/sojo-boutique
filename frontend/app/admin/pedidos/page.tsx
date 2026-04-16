@@ -126,7 +126,7 @@ export default function PedidosPage() {
       p.total,
       p.estado
     ])
-    exportToCSV("pedidos_soho", headers, rows)
+    exportToCSV("pedidos_sojo", headers, rows)
   }
 
   const handleExportPDF = () => {

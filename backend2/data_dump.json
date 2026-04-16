@@ -1,0 +1,516 @@
+{
+  "user": [
+    {
+      "id": 1,
+      "email": "admin@sojaboutique.com",
+      "full_name": "Admin Soho",
+      "hashed_password": "$pbkdf2-sha256$29000$IoSQ0roXYizFeE8phfDemw$.QHSDRYr2NmgpqnrWdVbQcEl3R5KGydveWbUdYfzhrY",
+      "role": "ADMIN",
+      "is_active": 1
+    },
+    {
+      "id": 2,
+      "email": "maria@ejemplo.com",
+      "full_name": "María González",
+      "hashed_password": "$pbkdf2-sha256$29000$/997j1FKybkXghAixPgfYw$uUxYWw8tVwcFZ2lQTEWVPadiqq2XcjFq5v5E26ZbrNk",
+      "role": "CLIENT",
+      "is_active": 1
+    },
+    {
+      "id": 3,
+      "email": "chefrei@gmail.com",
+      "full_name": "Jose Freitez",
+      "hashed_password": "$pbkdf2-sha256$29000$y1nrnZPynjMmROhdK8VYSw$eXYPSzrEHcyvMxEmLKqKMove1DMC1.BU0Z02Lr7mMrA",
+      "role": "CLIENT",
+      "is_active": 1
+    },
+    {
+      "id": 4,
+      "email": "123@gmail.com",
+      "full_name": "Juan Perez",
+      "hashed_password": "$pbkdf2-sha256$29000$MsZY6/1fC.H8n1MqRShFKA$bTbaDX436GETuKzCag0wnD47WxeNf3nOArI.YVeGeLY",
+      "role": "CLIENT",
+      "is_active": 1
+    }
+  ],
+  "category": [
+    {
+      "id": 1,
+      "name": "Prendas",
+      "slug": "prendas",
+      "description": null
+    },
+    {
+      "id": 2,
+      "name": "Accesorios",
+      "slug": "accesorios",
+      "description": null
+    },
+    {
+      "id": 3,
+      "name": "Perfumes",
+      "slug": "perfumes",
+      "description": null
+    }
+  ],
+  "product": [
+    {
+      "id": 4,
+      "name": "Invictus",
+      "description": "Invictus Clásico es la esencia pura de la elegancia atemporal. Diseñado para quienes buscan un aroma fresco, vibrante y lleno de vitalidad, combina notas cítricas con un fondo cálido y seductor. Ideal para el día a día o para ocasiones especiales, donde cada detalle cuenta. ",
+      "price": 19.99,
+      "stock": -5,
+      "image_url": "/images/productos/aa071df69ee74899a928c68eb78fb0ee.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 5,
+      "name": "Invictus Wings ",
+      "description": "Invictus Wings es la libertad personificada en un frasco. Con un toque de loción y notas dulces que evocan aventura y pasión, este perfume es perfecto para quienes no se conforman con lo ordinario. Su aroma ligero y envolvente te acompañará en cada vuelo de tu vida.",
+      "price": 22,
+      "stock": -2,
+      "image_url": "/images/productos/3db1b39b8b924b238a410d571e36d480.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 6,
+      "name": "Invictus Victory",
+      "description": "Invictus Victory es sofisticación pura. Con un equilibrio perfecto entre notas amaderadas y especiadas, este perfume transmite misterio y poder. Ideal para noches memorables o para quienes desean dejar una huella imborrable.",
+      "price": 22,
+      "stock": 0,
+      "image_url": "/images/productos/30da9f634dd84078b76535dec3d94eaa.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 7,
+      "name": "Invictus Deep Blue",
+      "description": "Invictus Deep Blue es el aroma de la profundidad y la intensidad. Su mezcla de notas acuáticas, florales y amaderadas crea una experiencia sensorial única. Perfecto para quienes buscan un perfume que hable de elegancia y pasión en cada detalle.",
+      "price": 22,
+      "stock": -2,
+      "image_url": "/images/productos/b8652030d2e548b9bd509f048fdd46c3.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 8,
+      "name": "Rose Rush",
+      "description": "Rose Rush es la esencia de la feminidad en su máxima expresión. Con un aroma floral vibrante y notas dulces de rosa, este perfume te transporta a un jardín de ensueño. Ideal para quienes buscan elegancia y sofisticación en cada ocasión.",
+      "price": 22,
+      "stock": 0,
+      "image_url": "http://127.0.0.1:8000/images/productos/370636a1a3b545d88ec40c7769801ac7.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 9,
+      "name": "Iconic Rose",
+      "description": "Iconic Rose es la definición de elegancia atemporal. Su combinación de notas rosadas y un toque de frutas frescas lo convierte en el complemento perfecto para cualquier look. Un aroma que destaca por su frescura y distinción. ",
+      "price": 202,
+      "stock": 0,
+      "image_url": "http://127.0.0.1:8000/images/productos/340f77072df84b71a1d3bf09af1b02ca.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 10,
+      "name": "Iconic Sheer Rose",
+      "description": "Iconic Sheer Rose es la delicadeza personificada. Con un bouquet floral suave y notas de rosa pura, este perfume es ideal para quienes prefieren fragancias sutiles pero memorables. Perfecto para el día a día o para ocasiones especiales.",
+      "price": 20,
+      "stock": 1,
+      "image_url": "http://127.0.0.1:8000/images/productos/f4d5b1f4ad514c52bf394ff2ca1323cf.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 11,
+      "name": "Heiress",
+      "description": "Heiress es la esencia del lujo y la feminidad. Su mezcla de notas florales y un toque de vainilla lo convierte en un perfume sofisticado y versátil. Ideal para quienes buscan dejar una impresión duradera.\n",
+      "price": 22,
+      "stock": 0,
+      "image_url": "http://127.0.0.1:8000/images/productos/0581d98fcf344c8980e526af585537b2.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 12,
+      "name": "Heiress Sheer",
+      "description": "Heiress Sheer es la elegancia en su forma más pura. Con un aroma floral ligero y notas de rosa y jazmín, este perfume es perfecto para quienes prefieren fragancias frescas y discretas pero llenas de personalidad.",
+      "price": 20,
+      "stock": 0,
+      "image_url": "http://127.0.0.1:8000/images/productos/024603f50feb4f1595a32e6ec15c946a.jpg",
+      "category_id": 3,
+      "sku": null
+    },
+    {
+      "id": 13,
+      "name": "Fantasy – Britney Spears",
+      "description": "Fantasy es la esencia de la fantasía hecha perfume. Con notas vibrantes de frutas tropicales, vainilla y flores blancas, este aroma te transporta a un mundo de dulzura y exotismo. Ideal para quienes buscan un perfume que combine frescura y sensualidad en cada ocasión.",
+      "price": 21,
+      "stock": 0,
+      "image_url": "http://127.0.0.1:8000/images/productos/ab33701be8844029b4007e15458beebb.jpg",
+      "category_id": 3,
+      "sku": null
+    }
+  ],
+  "order": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "total_price": 150,
+      "amount_paid": 50,
+      "status": "DELIVERED",
+      "payment_status": "PARTIAL",
+      "created_at": "2026-04-06 14:43:47.436395",
+      "reference": null
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "total_price": 42,
+      "amount_paid": 0,
+      "status": "DELIVERED",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-08 17:31:33.756582",
+      "reference": null
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "total_price": 19.99,
+      "amount_paid": 0,
+      "status": "DELIVERED",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-08 17:42:44.876883",
+      "reference": null
+    },
+    {
+      "id": 4,
+      "user_id": 2,
+      "total_price": 88,
+      "amount_paid": 0,
+      "status": "CANCELLED",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-08 18:28:31.495108",
+      "reference": null
+    },
+    {
+      "id": 5,
+      "user_id": 2,
+      "total_price": 22,
+      "amount_paid": 0,
+      "status": "CANCELLED",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-08 19:08:53.411338",
+      "reference": null
+    },
+    {
+      "id": 6,
+      "user_id": 1,
+      "total_price": 19.99,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-08 19:18:22.328099",
+      "reference": null
+    },
+    {
+      "id": 7,
+      "user_id": 2,
+      "total_price": 171.98,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-13 16:46:48.586175",
+      "reference": null
+    },
+    {
+      "id": 8,
+      "user_id": 2,
+      "total_price": 39.98,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-13 17:26:59.692548",
+      "reference": null
+    },
+    {
+      "id": 9,
+      "user_id": 3,
+      "total_price": 42,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-13 17:27:34.831695",
+      "reference": null
+    },
+    {
+      "id": 10,
+      "user_id": 2,
+      "total_price": 44,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-13 17:28:17.016548",
+      "reference": null
+    },
+    {
+      "id": 11,
+      "user_id": 3,
+      "total_price": 263.98,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-13 17:29:38.560420",
+      "reference": null
+    },
+    {
+      "id": 12,
+      "user_id": 2,
+      "total_price": 66,
+      "amount_paid": 0,
+      "status": "PENDING",
+      "payment_status": "PENDING",
+      "created_at": "2026-04-14 03:35:30.709457",
+      "reference": "PED-000012"
+    }
+  ],
+  "orderitem": [
+    {
+      "id": 1,
+      "order_id": 2,
+      "product_id": 11,
+      "quantity": 1,
+      "unit_price": 22
+    },
+    {
+      "id": 2,
+      "order_id": 2,
+      "product_id": 12,
+      "quantity": 1,
+      "unit_price": 20
+    },
+    {
+      "id": 3,
+      "order_id": 3,
+      "product_id": 4,
+      "quantity": 1,
+      "unit_price": 19.99
+    },
+    {
+      "id": 4,
+      "order_id": 4,
+      "product_id": 6,
+      "quantity": 1,
+      "unit_price": 22
+    },
+    {
+      "id": 5,
+      "order_id": 4,
+      "product_id": 7,
+      "quantity": 1,
+      "unit_price": 22
+    },
+    {
+      "id": 6,
+      "order_id": 4,
+      "product_id": 5,
+      "quantity": 2,
+      "unit_price": 22
+    },
+    {
+      "id": 7,
+      "order_id": 5,
+      "product_id": 5,
+      "quantity": 1,
+      "unit_price": 22
+    },
+    {
+      "id": 8,
+      "order_id": 6,
+      "product_id": 4,
+      "quantity": 1,
+      "unit_price": 19.99
+    },
+    {
+      "id": 9,
+      "order_id": 7,
+      "product_id": 7,
+      "quantity": 2,
+      "unit_price": 22
+    },
+    {
+      "id": 10,
+      "order_id": 7,
+      "product_id": 6,
+      "quantity": 2,
+      "unit_price": 22
+    },
+    {
+      "id": 11,
+      "order_id": 7,
+      "product_id": 5,
+      "quantity": 2,
+      "unit_price": 22
+    },
+    {
+      "id": 12,
+      "order_id": 7,
+      "product_id": 4,
+      "quantity": 2,
+      "unit_price": 19.99
+    },
+    {
+      "id": 13,
+      "order_id": 8,
+      "product_id": 4,
+      "quantity": 2,
+      "unit_price": 19.99
+    },
+    {
+      "id": 14,
+      "order_id": 9,
+      "product_id": 13,
+      "quantity": 2,
+      "unit_price": 21
+    },
+    {
+      "id": 15,
+      "order_id": 10,
+      "product_id": 8,
+      "quantity": 2,
+      "unit_price": 22
+    },
+    {
+      "id": 16,
+      "order_id": 11,
+      "product_id": 4,
+      "quantity": 2,
+      "unit_price": 19.99
+    },
+    {
+      "id": 17,
+      "order_id": 11,
+      "product_id": 7,
+      "quantity": 1,
+      "unit_price": 22
+    },
+    {
+      "id": 18,
+      "order_id": 11,
+      "product_id": 9,
+      "quantity": 1,
+      "unit_price": 202
+    },
+    {
+      "id": 19,
+      "order_id": 12,
+      "product_id": 5,
+      "quantity": 3,
+      "unit_price": 22
+    }
+  ],
+  "payment": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "order_id": 1,
+      "amount": 50,
+      "method": "Zelle",
+      "notes": "Abono inicial",
+      "created_at": "2026-04-06 14:43:47.451721",
+      "reference": null
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "order_id": null,
+      "amount": 20,
+      "method": "Efectivo",
+      "notes": null,
+      "created_at": "2026-04-07 05:30:33.600424",
+      "reference": null
+    },
+    {
+      "id": 3,
+      "user_id": 2,
+      "order_id": null,
+      "amount": 10,
+      "method": "Pago Movil",
+      "notes": null,
+      "created_at": "2026-04-07 05:31:02.139137",
+      "reference": null
+    },
+    {
+      "id": 4,
+      "user_id": 3,
+      "order_id": null,
+      "amount": 12,
+      "method": "Efectivo",
+      "notes": null,
+      "created_at": "2026-04-08 17:32:53.370327",
+      "reference": null
+    }
+  ],
+  "customerprofile": [
+    {
+      "id": 1,
+      "user_id": 3,
+      "phone": "+573006104370",
+      "address": "Trinitarias. Residencias Daniela Apto 72",
+      "city": "Barquisimeto",
+      "state": "Lara",
+      "postal_code": "3001",
+      "notes": "Esposo de Aymara",
+      "identification_type": "dni",
+      "identification_number": "13695091",
+      "customer_id": null
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "phone": "04223556508",
+      "address": "Avenida 5 con calle 1",
+      "city": "Cocorote",
+      "state": "Yaracuy",
+      "postal_code": "3201",
+      "notes": "",
+      "identification_type": "dni",
+      "identification_number": "123456",
+      "customer_id": null
+    },
+    {
+      "id": 3,
+      "user_id": 4,
+      "phone": "123123123",
+      "address": "Calle 1, con av 1",
+      "city": "Primera",
+      "state": "Lara",
+      "postal_code": "3001",
+      "notes": "Cliente de prueba",
+      "identification_type": "dni",
+      "identification_number": "321321321",
+      "customer_id": null
+    }
+  ],
+  "cartitem": [],
+  "settings": [
+    {
+      "id": 1,
+      "business_name": "Sojo Boutique",
+      "slogan": "Tu destino de moda exclusivo",
+      "rif": "V-13034082-9",
+      "phone": "+58 422-3709421",
+      "address": "Cocorote-Yaracuy",
+      "email": "aymararodriguezmendoza@gmail.com",
+      "primary_color": "350 65% 65%",
+      "accent_color": "15 75% 75%",
+      "heading_font": "Great Vibes",
+      "body_font": "Mona Sans",
+      "logo_url": "http://127.0.0.1:8000/images/productos/61475de2c8c24a85b42a62f800d3a271.png"
+    }
+  ],
+  "wishlist": []
+}

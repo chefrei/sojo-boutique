@@ -115,7 +115,7 @@ export default function ReportesPage() {
 
     exportToPDF(
       "Resumen Financiero Consolidado",
-      `Análisis de ingresos y ventas | Soho Boutique Intelligence`,
+      `Análisis de ingresos y ventas | Sojo Boutique Intelligence`,
       headers,
       rows,
       undefined,
