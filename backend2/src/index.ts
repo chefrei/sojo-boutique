@@ -6,6 +6,7 @@
  */
 
 import { Hono } from "hono";
+import { trimTrailingSlash } from "hono/trailing-slash";
 import { corsMiddleware } from "./middleware/cors";
 import { authMiddleware } from "./middleware/auth";
 import type { Env, AppVariables } from "./types";
@@ -25,6 +26,7 @@ const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 // ─── Middlewares Globales ───────────────────────────────
 
+app.use("*", trimTrailingSlash());
 app.use("*", corsMiddleware);
 app.use("*", authMiddleware);
 

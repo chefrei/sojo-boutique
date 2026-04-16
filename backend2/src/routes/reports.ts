@@ -4,6 +4,8 @@
  * Endpoints:
  *   GET /customers/:customer_id/kardex — Historial financiero del cliente
  *   GET /finance/summary               — Resumen financiero por rango de fechas
+ *   GET /finance/stats                 — Estadísticas mensuales para la gráfica
+ *   GET /categories/stats              — Ventas por categoría para el gráfico de torta
  */
 
 import { Hono } from "hono";
@@ -208,6 +210,90 @@ reportsRouter.get("/finance/summary", async (c) => {
     order_count: ordersInRange.length,
     payment_count: paymentsInRange.length,
   });
+});
+
+// ─── GET /finance/stats ──────────────────────────────────
+
+/**
+ * Obtiene estadísticas mensuales de los últimos 6 meses.
+ * Para el gráfico de barras del admin.
+ */
+reportsRouter.get("/finance/stats", async (c) => {
+  const db = createDb(c.env.DB);
+  const result = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const monthStr = `${year}-${String(month).padStart(2, "0")}`;
+
+    const startOfMonth = `${monthStr}-01T00:00:00.000Z`;
+    const nextMonth = new Date(year, month, 1);
+    const endOfMonth = nextMonth.toISOString();
+
+    const ordersInMonth = await db
+      .select({ total: sql<string | number>`COALESCE(SUM(${orders.total_price}), 0)` })
+      .from(orders)
+      .where(and(gte(orders.created_at, startOfMonth), lte(orders.created_at, endOfMonth)));
+
+    const paymentsInMonth = await db
+      .select({ total: sql<string | number>`COALESCE(SUM(${payments.amount}), 0)` })
+      .from(payments)
+      .where(and(gte(payments.created_at, startOfMonth), lte(payments.created_at, endOfMonth)));
+
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    
+    result.push({
+      month: monthNames[d.getMonth()],
+      ventas: Number(ordersInMonth[0]?.total || 0),
+      recaudado: Number(paymentsInMonth[0]?.total || 0),
+    });
+  }
+
+  return c.json(result);
+});
+
+// ─── GET /categories/stats ───────────────────────────────
+
+/**
+ * Obtiene el volumen de ventas por categoría.
+ * Para el gráfico de torta.
+ */
+reportsRouter.get("/categories/stats", async (c) => {
+  const db = createDb(c.env.DB);
+  
+  // Obtener todas las categorías y sumar sus ventas
+  const allCategories = await db.query.categories.findMany({
+    with: {
+      products: {
+        with: {
+          orderItems: true
+        }
+      }
+    }
+  });
+
+  const result = allCategories.map(cat => {
+    let total = 0;
+    cat.products.forEach(prod => {
+      prod.orderItems.forEach(item => {
+        total += item.unit_price * item.quantity;
+      });
+    });
+    return {
+      name: cat.name,
+      value: total
+    };
+  }).filter(item => item.value > 0);
+
+  // Si no hay ventas, devolver placeholder para que el gráfico no falle
+  if (result.length === 0) {
+    return c.json([{ name: "Sin ventas", value: 1 }]);
+  }
+
+  return c.json(result);
 });
 
 export default reportsRouter;
