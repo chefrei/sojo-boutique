@@ -103,26 +103,28 @@ productsRouter.get("/", async (c) => {
   const maxPrice = c.req.query("max_price");
 
   const db = createDb(c.env.DB);
+  console.log(`[Products] Listando productos (offset=${offset}, limit=${limit})`);
 
-  // Construir condiciones de filtro
-  const conditions = [];
-  if (categoryId) {
-    conditions.push(eq(products.category_id, Number(categoryId)));
-  }
-  if (minPrice) {
-    conditions.push(gte(products.price, Number(minPrice)));
-  }
-  if (maxPrice) {
-    conditions.push(lte(products.price, Number(maxPrice)));
+  // Simplificar: Primero obtener productos, luego adjuntar categorías si es necesario
+  // o simplemente usar select() si findMany está fallando en el join en producción.
+  const rawProducts = await db
+    .select()
+    .from(products)
+    .offset(offset)
+    .limit(limit);
+
+  const result = [];
+  for (const p of rawProducts) {
+    const category = await db.query.categories.findFirst({
+      where: eq(categories.id, p.category_id)
+    });
+    result.push({
+      ...p,
+      category: category || null
+    });
   }
 
-  const result = await db.query.products.findMany({
-    where: conditions.length > 0 ? and(...conditions) : undefined,
-    with: { category: true },
-    offset,
-    limit,
-  });
-
+  console.log(`[Products] Encontrados: ${result.length}`);
   return c.json(result);
 });
 

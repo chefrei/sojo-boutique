@@ -41,7 +41,16 @@ async function buildCustomerResponse(
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
   });
-  if (!user || user.role !== "client") return null;
+  
+  if (!user) {
+    console.log(`[Customers] Usuario ID ${userId} no encontrado`);
+    return null;
+  }
+  
+  if (user.role !== "client") {
+    // console.log(`[Customers] Usuario ID ${userId} no es cliente (rol: ${user.role})`);
+    return null;
+  }
 
   const profile = await db.query.customerProfiles.findFirst({
     where: eq(customerProfiles.user_id, userId),
@@ -122,9 +131,16 @@ customersRouter.get("/", async (c) => {
   const result = [];
   for (const user of clientUsers) {
     const customerData = await buildCustomerResponse(db, user.id);
-    if (customerData) result.push(customerData);
+    if (customerData) {
+      result.push(customerData);
+    } else {
+      // Si por alguna razón falla el helper (ej: no era client), agregamos el básico si falló por otra razón
+      // pero aquí el filtro inicial ya es users.role = 'client'
+      console.log(`[Customers] Saltando usuario ID ${user.id} por helper nulo`);
+    }
   }
 
+  console.log(`[Customers] Encontrados: ${result.length}`);
   return c.json(result);
 });
 

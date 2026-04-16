@@ -41,42 +41,50 @@ adminRouter.use("/*", requireAdmin);
  */
 adminRouter.get("/dashboard", async (c) => {
   const db = createDb(c.env.DB);
+  console.log("[Dashboard] Obteniendo estadísticas...");
 
-  // Total ventas (pedidos entregados)
+  // Total ventas (pedidos entregados) - Forzar conversión numérica
   const salesResult = await db
-    .select({ total: sql<number>`COALESCE(SUM(${orders.total_price}), 0)` })
+    .select({ total: sql<string | number>`COALESCE(SUM(${orders.total_price}), 0)` })
     .from(orders)
     .where(eq(orders.status, "delivered"));
-  const totalSales = salesResult[0]?.total ?? 0;
+  const totalSales = Number(salesResult[0]?.total || 0);
 
   // Total cobrado (todos los pagos)
   const collectedResult = await db
-    .select({ total: sql<number>`COALESCE(SUM(${payments.amount}), 0)` })
+    .select({ total: sql<string | number>`COALESCE(SUM(${payments.amount}), 0)` })
     .from(payments);
-  const totalCollected = collectedResult[0]?.total ?? 0;
+  const totalCollected = Number(collectedResult[0]?.total || 0);
 
   // Total por cobrar
   const totalReceivable = totalSales - totalCollected;
 
-  // Cantidad de pedidos entregados
+  // Cantidad de pedidos entregados (y total para depuración)
   const orderCountResult = await db
-    .select({ count: sql<number>`COUNT(${orders.id})` })
-    .from(orders)
-    .where(eq(orders.status, "delivered"));
-  const orderCount = orderCountResult[0]?.count ?? 0;
+    .select({ 
+      delivered: sql<number>`COUNT(id) FILTER (WHERE status = 'delivered')`,
+      total: sql<number>`COUNT(id)` 
+    })
+    .from(orders);
+  
+  const orderCount = Number(orderCountResult[0]?.delivered || 0);
+  const orderTotal = Number(orderCountResult[0]?.total || 0);
 
   // Cantidad de clientes
   const customerCountResult = await db
     .select({ count: sql<number>`COUNT(${users.id})` })
     .from(users)
     .where(eq(users.role, "client"));
-  const customerCount = customerCountResult[0]?.count ?? 0;
+  const customerCount = Number(customerCountResult[0]?.count || 0);
+
+  console.log(`[Dashboard] Stats: ventas=${totalSales}, orders_deliv=${orderCount}, orders_total=${orderTotal}, clients=${customerCount}`);
 
   return c.json({
     total_sales: totalSales,
     total_collected: totalCollected,
     total_receivable: totalReceivable,
-    order_count: orderCount,
+    order_count: orderCount, // El frontend espera esto para "Pedidos Registrados"
+    order_total: orderTotal,
     customer_count: customerCount,
   });
 });
