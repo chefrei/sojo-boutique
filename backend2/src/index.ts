@@ -26,7 +26,6 @@ const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 // ─── Middlewares Globales ───────────────────────────────
 
-app.use("*", trimTrailingSlash());
 app.use("*", corsMiddleware);
 app.use("*", authMiddleware);
 

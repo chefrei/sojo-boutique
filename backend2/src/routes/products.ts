@@ -14,7 +14,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { createDb } from "../db/index";
 import { products, categories } from "../db/schema";
 import { requireAdmin } from "../middleware/auth";
@@ -162,6 +162,7 @@ const productCreateSchema = z.object({
   stock: z.number().int().min(0),
   image_url: z.string().nullable().optional(),
   category_id: z.number().int(),
+  sku: z.string().optional(),
 });
 
 productsRouter.post(
@@ -172,6 +173,24 @@ productsRouter.post(
     const data = c.req.valid("json");
     const db = createDb(c.env.DB);
 
+    // 1. Auto-generar SKU si no viene provisto
+    let finalSku = data.sku;
+    if (!finalSku) {
+      const category = await db.query.categories.findFirst({
+        where: eq(categories.id, data.category_id),
+      });
+      const prefix = category ? category.name.substring(0, 3).toUpperCase() : "PROD";
+      
+      // Contar productos en esta categoría para el correlativo
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(products)
+        .where(eq(products.category_id, data.category_id));
+      
+      const count = Number(countResult[0]?.count || 0);
+      finalSku = `${prefix}-${String(count + 1).padStart(6, '0')}`;
+    }
+
     const result = await db
       .insert(products)
       .values({
@@ -181,6 +200,7 @@ productsRouter.post(
         stock: data.stock,
         image_url: data.image_url ?? null,
         category_id: data.category_id,
+        sku: finalSku,
       })
       .returning();
 

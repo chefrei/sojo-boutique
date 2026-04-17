@@ -9,11 +9,9 @@ database_name = "sojo-boutique-db"
 database_id = "bbfa58fa-4977-4547-b856-55c40f45e922"
 
 # Cloudflare R2 Bucket
-# ⚠️  Descomenta esto después de habilitar R2 en el Dashboard de Cloudflare
-# y crear el bucket con: wrangler r2 bucket create soho-boutique-images
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "soho-boutique-images"
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "soho-boutique-images"
 
 [vars]
 ENVIRONMENT = "production"

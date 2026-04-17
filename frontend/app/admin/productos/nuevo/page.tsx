@@ -29,7 +29,7 @@ const productSchema = z.object({
   price: z.coerce.number().positive({ message: "El precio debe ser mayor que 0" }),
   comparePrice: z.coerce.number().nonnegative().optional(),
   cost: z.coerce.number().nonnegative().optional(),
-  sku: z.string().min(1, { message: "El SKU es requerido" }),
+  sku: z.string().optional(),
   barcode: z.string().optional(),
   inventory: z.coerce.number().int().nonnegative(),
   trackInventory: z.boolean().default(true),
@@ -82,7 +82,7 @@ export default function NuevoProductoPage() {
         
         try {
           // Usamos apiFetch que maneja la auth y el FormData automáticamente
-          const uploadRes = await apiFetch<any>("/upload/", {
+          const uploadRes = await apiFetch<any>("/upload", {
             method: "POST",
             body: formData,
           })
@@ -111,12 +111,13 @@ export default function NuevoProductoPage() {
         price: data.price,
         stock: data.inventory,
         category_id: categoryMap[data.category] || 1,
-        image_url: image_url
+        image_url: image_url,
+        sku: data.sku || undefined
       }
       
-      console.log("Enviando payload a /products/:", payload)
+      console.log("Enviando payload a /products:", payload)
 
-      const productRes = await apiFetch("/products/", {
+      const productRes = await apiFetch("/products", {
          method: "POST",
          body: JSON.stringify(payload)
       })
