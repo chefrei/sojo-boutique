@@ -72,8 +72,7 @@ const saleSchema = z.object({
   date: z.date({ required_error: "La fecha de pedido es requerida" }),
   deliveryDate: z.date().optional().nullable(),
   status: z.enum(["pending", "delivered"]).default("pending"),
-  paymentMethod: z.string({ required_error: "El método de pago es requerido" }),
-  paymentStatus: z.enum(["pending", "partial", "paid"]).default("paid"),
+  paymentStatus: z.enum(["pending", "partial", "paid"]).default("pending"),
   amountPaid: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 })
@@ -167,9 +166,8 @@ export default function NuevaVentaPage() {
       clientEmail: "",
       date: new Date(),
       deliveryDate: null,
-      status: "delivered", // Por defecto entregado (Venta)
-      paymentMethod: "cash",
-      paymentStatus: "paid", // Por defecto pagado (Venta de contado)
+      status: "pending", // Por defecto Pedido
+      paymentStatus: "pending", // Por defecto Sin Pago
       amountPaid: 0,
       notes: "",
     },
@@ -219,8 +217,8 @@ export default function NuevaVentaPage() {
           items: cartItems.map((i) => ({ product_id: i.id, quantity: i.quantity })),
           status: data.status,
           payment_status: data.paymentStatus,
-          payment_method: data.paymentMethod,
-          amount_paid: data.paymentStatus === "partial" ? data.amountPaid : (data.paymentStatus === "paid" ? calculateTotal() : 0),
+          payment_method: "credit", // Por defecto deuda si no se especifica
+          amount_paid: data.paymentStatus === "partial" ? (data.amountPaid || 0) : (data.paymentStatus === "paid" ? calculateTotal() : 0),
           created_at: data.date.toISOString(),
           delivered_at: data.status === "delivered" ? (data.deliveryDate || data.date).toISOString() : null,
           notes: data.notes
@@ -508,7 +506,6 @@ export default function NuevaVentaPage() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        disabled={product.stock === 0}
                                         onClick={() => addProductToCart(product)}
                                       >
                                         Añadir
@@ -738,31 +735,6 @@ export default function NuevaVentaPage() {
                     />
                   )}
 
-                  {/* Método de pago */}
-                  <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Método de Pago</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar método" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="cash">Efectivo</SelectItem>
-                            <SelectItem value="card">Tarjeta</SelectItem>
-                            <SelectItem value="transfer">Transferencia</SelectItem>
-                            <SelectItem value="credit">Crédito (Deuda)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   {/* Estado de pago */}
                   <FormField
                     control={form.control}
@@ -777,7 +749,7 @@ export default function NuevaVentaPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="paid">Completado</SelectItem>
+                            <SelectItem value="paid">Completado (Pagado)</SelectItem>
                             <SelectItem value="pending">Pendiente (Sin Pago)</SelectItem>
                             <SelectItem value="partial">Pago Parcial (Abono)</SelectItem>
                           </SelectContent>
@@ -804,7 +776,7 @@ export default function NuevaVentaPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            El resto (${(calculateTotal() - (form.watch("amountPaid") || 0)).toFixed(2)}) se registrará como deuda.
+                            El resto (${(calculateTotal() - Number(form.watch("amountPaid") || 0)).toFixed(2)}) se registrará como deuda.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
