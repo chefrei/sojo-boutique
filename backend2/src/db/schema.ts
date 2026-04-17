@@ -122,6 +122,7 @@ export const orders = sqliteTable("order", {
   created_at: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
+  delivered_at: text("delivered_at"),
   reference: text("reference"),
 });
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Calendar, Minus, Plus, Search, Trash2, User, Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -69,9 +69,12 @@ const saleSchema = z.object({
   clientName: z.string().min(1),
   clientPhone: z.string().optional(),
   clientEmail: z.string().optional(),
-  date: z.date({ required_error: "La fecha es requerida" }),
+  date: z.date({ required_error: "La fecha de pedido es requerida" }),
+  deliveryDate: z.date().optional().nullable(),
+  status: z.enum(["pending", "delivered"]).default("pending"),
   paymentMethod: z.string({ required_error: "El método de pago es requerido" }),
-  paymentStatus: z.string({ required_error: "El estado de pago es requerido" }),
+  paymentStatus: z.enum(["pending", "partial", "paid"]).default("paid"),
+  amountPaid: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 })
 
@@ -83,7 +86,9 @@ type SaleFormValues = z.infer<typeof saleSchema>
 
 export default function NuevaVentaPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [date, setDate] = useState<Date>(new Date())
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showProductDialog, setShowProductDialog] = useState(false)
@@ -161,15 +166,37 @@ export default function NuevaVentaPage() {
       clientPhone: "",
       clientEmail: "",
       date: new Date(),
+      deliveryDate: null,
+      status: "delivered", // Por defecto entregado (Venta)
       paymentMethod: "cash",
-      paymentStatus: "completed",
+      paymentStatus: "paid", // Por defecto pagado (Venta de contado)
+      amountPaid: 0,
       notes: "",
     },
   })
 
+  // Capturar cliente de URL
+  useEffect(() => {
+    const clientIdParam = searchParams.get("cliente")
+    if (clientIdParam && customers.length > 0) {
+      const id = parseInt(clientIdParam)
+      const customer = customers.find(c => c.id === id)
+      if (customer) {
+        form.setValue("clientId", customer.id)
+        form.setValue("clientName", customer.name)
+        form.setValue("clientPhone", customer.phone ?? "")
+        form.setValue("clientEmail", customer.email ?? "")
+      }
+    }
+  }, [searchParams, customers, form])
+
   useEffect(() => {
     form.setValue("date", date)
   }, [date, form])
+
+  useEffect(() => {
+    form.setValue("deliveryDate", deliveryDate || null)
+  }, [deliveryDate, form])
 
   // ── Submit ─────────────────────────────────────────────────
 
@@ -185,11 +212,18 @@ export default function NuevaVentaPage() {
 
     setIsSubmitting(true)
     try {
-      await apiFetch("/orders/", {
+      await apiFetch("/orders", {
         method: "POST",
         body: JSON.stringify({
           user_id: data.clientId,
           items: cartItems.map((i) => ({ product_id: i.id, quantity: i.quantity })),
+          status: data.status,
+          payment_status: data.paymentStatus,
+          payment_method: data.paymentMethod,
+          amount_paid: data.paymentStatus === "partial" ? data.amountPaid : (data.paymentStatus === "paid" ? calculateTotal() : 0),
+          created_at: data.date.toISOString(),
+          delivered_at: data.status === "delivered" ? (data.deliveryDate || data.date).toISOString() : null,
+          notes: data.notes
         }),
       })
 
@@ -637,6 +671,73 @@ export default function NuevaVentaPage() {
                     )}
                   />
 
+                  {/* Estado de Entrega */}
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado de Entrega</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar estado" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="pending">Pedido (Pendiente de Entrega)</SelectItem>
+                            <SelectItem value="delivered">Venta (Entregado)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Fecha de Entrega si está entregado */}
+                  {form.watch("status") === "delivered" && (
+                    <FormField
+                      control={form.control}
+                      name="deliveryDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Fecha de Entrega</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? formatDate(field.value as Date) : <span>Igual a la fecha de pedido</span>}
+                                  <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={field.value as Date}
+                                onSelect={(d) => {
+                                  if (d) {
+                                    setDeliveryDate(d)
+                                    field.onChange(d)
+                                  }
+                                }}
+                                disabled={(d) => d > new Date() || d < new Date("1900-01-01")}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   {/* Método de pago */}
                   <FormField
                     control={form.control}
@@ -676,15 +777,40 @@ export default function NuevaVentaPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="completed">Completado</SelectItem>
-                            <SelectItem value="pending">Pendiente</SelectItem>
-                            <SelectItem value="partial">Pago Parcial</SelectItem>
+                            <SelectItem value="paid">Completado</SelectItem>
+                            <SelectItem value="pending">Pendiente (Sin Pago)</SelectItem>
+                            <SelectItem value="partial">Pago Parcial (Abono)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {/* Campo de Abono si es pago parcial */}
+                  {form.watch("paymentStatus") === "partial" && (
+                    <FormField
+                      control={form.control}
+                      name="amountPaid"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Monto Abonado ($)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              placeholder="0.00" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            El resto (${(calculateTotal() - (form.watch("amountPaid") || 0)).toFixed(2)}) se registrará como deuda.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {/* Notas */}
                   <FormField

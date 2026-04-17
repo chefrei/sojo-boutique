@@ -13,7 +13,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { createDb } from "../db/index";
-import { orders, orderItems, products, users } from "../db/schema";
+import { orders, orderItems, products, users, payments } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import type { Env, AppVariables } from "../types";
 
@@ -44,10 +44,27 @@ const orderCreateSchema = z.object({
     )
     .min(1),
   user_id: z.number().int().nullable().optional(),
+  status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]).optional().default("pending"),
+  payment_status: z.enum(["pending", "partial", "paid", "refunded"]).optional().default("pending"),
+  payment_method: z.string().optional().default("cash"),
+  amount_paid: z.number().min(0).optional().default(0),
+  created_at: z.string().optional(),
+  delivered_at: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 ordersRouter.post("/", zValidator("json", orderCreateSchema), async (c) => {
-  const { items, user_id } = c.req.valid("json");
+    const { 
+    items, 
+    user_id, 
+    status, 
+    payment_status, 
+    payment_method, 
+    amount_paid, 
+    created_at, 
+    delivered_at,
+    notes 
+  } = c.req.valid("json");
   const currentUser = c.get("currentUser")!;
   const db = createDb(c.env.DB);
 
@@ -63,15 +80,17 @@ ordersRouter.post("/", zValidator("json", orderCreateSchema), async (c) => {
     targetUserId = user_id;
   }
 
-  // 1. Crear la orden base
+  // 1. Crear la orden base (primero con valores temporales para los montos)
   const [newOrder] = await db
     .insert(orders)
     .values({
       user_id: targetUserId,
       total_price: 0,
-      amount_paid: 0,
-      status: "pending",
-      payment_status: "pending",
+      amount_paid: 0, 
+      status: status || "pending",
+      payment_status: payment_status || "pending",
+      created_at: created_at || new Date().toISOString(),
+      delivered_at: delivered_at || null,
     })
     .returning();
 
@@ -107,11 +126,36 @@ ordersRouter.post("/", zValidator("json", orderCreateSchema), async (c) => {
     });
   }
 
-  // 3. Actualizar precio total
+  // 3. Actualizar precio total y monto pagado final
+  let finalPaymentStatus = payment_status;
+  let finalAmountPaid = amount_paid || 0;
+
+  if (payment_status === "paid") {
+    finalAmountPaid = totalPrice;
+  } else if (payment_status === "pending") {
+    finalAmountPaid = 0;
+  }
+
   await db
     .update(orders)
-    .set({ total_price: totalPrice })
+    .set({ 
+      total_price: totalPrice,
+      amount_paid: finalAmountPaid,
+      payment_status: finalPaymentStatus as any
+    })
     .where(eq(orders.id, newOrder.id));
+
+  // 4. Si hay un abono, registrarlo en la tabla de pagos
+  if (finalAmountPaid > 0) {
+    await db.insert(payments).values({
+      user_id: targetUserId,
+      order_id: newOrder.id,
+      amount: finalAmountPaid,
+      method: payment_method || "cash",
+      notes: notes ? `Registro automático al crear venta: ${notes}` : "Pago inicial registrado al crear el pedido/venta.",
+      created_at: created_at || new Date().toISOString(),
+    });
+  }
 
   // 4. Retornar el pedido completo
   const fullOrder = await db.query.orders.findFirst({
