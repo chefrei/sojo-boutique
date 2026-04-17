@@ -90,11 +90,12 @@ export const products = sqliteTable(
   (table) => [index("ix_product_name").on(table.name)]
 );
 
-export const productsRelations = relations(products, ({ one }) => ({
+export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.category_id],
     references: [categories.id],
   }),
+  orderItems: many(orderItems),
 }));
 
 // ──────────────────────────────────────────────

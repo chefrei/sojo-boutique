@@ -19,6 +19,7 @@ import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/contexts/auth-context"
 import { LoginDialog } from "@/components/login-dialog"
+import { getCleanImageUrl } from "@/lib/utils"
 
 import { useSearchParams } from "next/navigation"
 
@@ -354,7 +355,7 @@ function CatalogoContent() {
                       <Link href={`/producto/${product.id}`} className="flex-1">
                         <div className="aspect-[4/5] overflow-hidden bg-muted">
                           <Image
-                            src={product.image_url || "/placeholder.svg"}
+                            src={getCleanImageUrl(product.image_url)}
                             alt={product.name}
                             width={400}
                             height={500}

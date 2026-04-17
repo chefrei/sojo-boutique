@@ -34,28 +34,31 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     async function fetchDashboardData() {
-      try {
-        const [dashStats, orders, products, finStats, catStats] = await Promise.all([
-          apiFetch<any>("/admin/dashboard"),
-          apiFetch<any[]>("/admin/orders?limit=5"),
-          apiFetch<any[]>("/products/"),
-          apiFetch<any[]>("/reports/finance/stats"),
-          apiFetch<any[]>("/reports/categories/stats")
-        ])
-        
-        // Add active products manually since it's not in the dashboard endpoint yet
-        dashStats.productos_activos = products.length
-        
-        setStats(dashStats)
-        setRecentSales(orders)
-        setPopularProducts(products.slice(0, 5))
-        setFinanceStats(finStats)
-        setCategoryStats(catStats)
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-      } finally {
-        setIsLoading(false)
+      // Usar Promise.allSettled para que si un endpoint de reportes falla, el resto cargue
+      const results = await Promise.allSettled([
+        apiFetch<any>("/admin/dashboard"),
+        apiFetch<any[]>("/admin/orders?limit=5"),
+        apiFetch<any[]>("/products/"),
+        apiFetch<any[]>("/reports/finance/stats"),
+        apiFetch<any[]>("/reports/categories/stats")
+      ])
+      
+      const [dashRes, ordersRes, productsRes, finRes, catRes] = results
+
+      if (dashRes.status === "fulfilled") {
+        const dStats = dashRes.value
+        if (productsRes.status === "fulfilled") {
+          dStats.productos_activos = productsRes.value.length
+        }
+        setStats(dStats)
       }
+
+      if (ordersRes.status === "fulfilled") setRecentSales(ordersRes.value)
+      if (productsRes.status === "fulfilled") setPopularProducts(productsRes.value.slice(0, 5))
+      if (finRes.status === "fulfilled") setFinanceStats(finRes.value)
+      if (catRes.status === "fulfilled") setCategoryStats(catRes.value)
+
+      setIsLoading(false)
     }
     fetchDashboardData()
   }, [])
