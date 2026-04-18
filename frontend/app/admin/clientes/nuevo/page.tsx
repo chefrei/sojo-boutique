@@ -79,6 +79,16 @@ export default function NuevoClientePage() {
     }
   }
 
+  const onInvalid = (errors: any) => {
+    console.error("Errores de validación frontend:", errors)
+    const firstError = Object.values(errors)[0] as any
+    toast({
+      title: "Revisa el formulario",
+      description: firstError?.message || "Hay campos inválidos o incompletos.",
+      variant: "destructive"
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -92,17 +102,17 @@ export default function NuevoClientePage() {
           <h2 className="text-2xl font-heading">Nuevo Cliente</h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => form.reset()} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={() => form.reset()} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+          <Button type="submit" form="new-client-form" disabled={isSubmitting}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</> : "Guardar Cliente"}
           </Button>
         </div>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form id="new-client-form" onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <Card>
