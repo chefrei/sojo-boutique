@@ -220,8 +220,12 @@ export default function DeudasPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>Ver historial</DropdownMenuItem>
-                          <DropdownMenuItem>Registrar pago a cuenta</DropdownMenuItem>
+                          <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link href={`/admin/clientes/${debtor.id}`}>Ver historial</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link href="/admin/pagos/nuevo">Registrar pago a cuenta</Link>
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
