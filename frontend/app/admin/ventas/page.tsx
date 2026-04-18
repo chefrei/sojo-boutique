@@ -19,6 +19,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,27 +65,43 @@ export default function VentasPage() {
     loadSales()
   }, [])
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  
+  // State for Modals
+  const [orderToCancel, setOrderToCancel] = useState<number | null>(null)
+  const [orderToView, setOrderToView] = useState<any | null>(null)
 
   // Calcular totales (basados en los pedidos entregados)
   const totalVentas = sales.reduce((sum, sale) => sum + Number(sale.total || sale.total_price || 0), 0)
   const ventasCompletadas = sales.filter((sale) => sale.payment_status === "paid").length
   const ventasPendientesDePago = sales.filter((sale) => sale.payment_status !== "paid").length
 
-  async function cancelOrder(id: number) {
-    if (!confirm("¿Estás seguro de anular esta venta? El stock será restaurado.")) return;
+  async function confirmCancelOrder(id: number) {
     try {
       setIsUpdating(id)
       await apiFetch(`/orders/${id}/cancel`, {
         method: "PUT"
       })
+      toast({
+        title: "Venta anulada",
+        description: "Los productos han regresado al inventario y se ha cancelado el pedido.",
+      })
       // reload
       const data = await apiFetch<any[]>("/admin/orders")
-      setSales(data)
+      const onlyDelivered = data.filter(order => 
+        order.estado === "Entregado" || 
+        order.status === "delivered"
+      )
+      setSales(onlyDelivered)
     } catch (error: any) {
       console.error("Error al cancelar venta", error)
-      alert(error.message || "No se pudo anular la venta")
+      toast({
+        title: "Error al anular",
+        description: error.message || "No se pudo anular la venta",
+        variant: "destructive"
+      })
     } finally {
       setIsUpdating(null)
+      setOrderToCancel(null)
     }
   }
 
@@ -256,13 +289,20 @@ export default function VentasPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                          <DropdownMenuItem>Imprimir factura</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setOrderToView(sale)}
+                            className="cursor-pointer"
+                          >
+                            Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer">
+                            Imprimir factura
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            className="text-destructive font-medium"
-                            onClick={() => cancelOrder(sale.db_id || sale.id)}
-                            disabled={sale.estado === "Cancelado" || sale.estado === "Completado" || isUpdating === (sale.db_id || sale.id)}
+                            className="text-destructive font-medium cursor-pointer"
+                            onClick={() => setOrderToCancel(sale.db_id || sale.id)}
+                            disabled={sale.estado === "Cancelado" || isUpdating === (sale.db_id || sale.id)}
                           >
                             Anular venta
                           </DropdownMenuItem>
@@ -291,6 +331,72 @@ export default function VentasPage() {
           </Button>
         </div>
       </div>
+
+      {/* Modal - Alerta de Cancelación */}
+      <AlertDialog open={!!orderToCancel} onOpenChange={(open) => !open && setOrderToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Anular esta venta permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción anulará la venta y eliminará la deuda asociada. 
+              Los productos contenidos en este pedido volverán al stock automáticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => orderToCancel && confirmCancelOrder(orderToCancel)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sí, Anular Venta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal - Vista de Detalles */}
+      <Dialog open={!!orderToView} onOpenChange={(open) => !open && setOrderToView(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Detalle de la Venta {orderToView?.id}</DialogTitle>
+            <DialogDescription>
+              Resumen de los productos entregados al cliente.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {orderToView && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-semibold block">Cliente</span>
+                  <span className="text-muted-foreground">{orderToView.cliente}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block">Fecha</span>
+                  <span className="text-muted-foreground">{orderToView.fecha ? formatDate(orderToView.fecha) : '—'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block">Total</span>
+                  <span className="text-amber-600 font-medium">${Number(orderToView.total).toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="font-semibold block">Estado</span>
+                  <span className="text-muted-foreground">{orderToView.estado} ({orderToView.payment_status === "paid" ? "PAGADO" : "DEUDA"})</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="font-semibold block mb-2 text-sm">Productos:</span>
+                <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                  {orderToView.productos?.map((p: string, i: number) => (
+                    <li key={i}>{p}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

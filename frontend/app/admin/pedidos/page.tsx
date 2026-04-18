@@ -20,6 +20,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -40,6 +50,7 @@ export default function PedidosPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("pendientes")
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  const [orderToCancel, setOrderToCancel] = useState<number | null>(null)
 
   async function loadOrders() {
     try {
@@ -73,7 +84,7 @@ export default function PedidosPage() {
     }
   }
 
-  async function cancelOrder(id: number) {
+  async function confirmCancelOrder(id: number) {
     try {
       setIsUpdating(id)
       await apiFetch(`/orders/${id}/cancel`, {
@@ -85,6 +96,7 @@ export default function PedidosPage() {
       toast({ title: "Error al cancelar", description: error.message || "No se pudo cancelar el pedido.", variant: "destructive" })
     } finally {
       setIsUpdating(null)
+      setOrderToCancel(null)
     }
   }
 
@@ -281,8 +293,8 @@ export default function PedidosPage() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => cancelOrder(pedido.db_id)} 
-                        className="font-medium text-red-600"
+                        onClick={() => setOrderToCancel(pedido.db_id)} 
+                        className="font-medium text-red-600 cursor-pointer"
                         disabled={pedido.estado === "Entregado" || pedido.estado === "Cancelado"}
                       >
                         <Ban className="w-4 h-4 mr-2" />
@@ -297,6 +309,28 @@ export default function PedidosPage() {
         </Table>
         )}
       </div>
+
+      <AlertDialog open={!!orderToCancel} onOpenChange={(open) => !open && setOrderToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar este pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción cancelará el pedido de forma permanente. 
+              Los productos contenidos en este pedido volverán al stock automáticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => orderToCancel && confirmCancelOrder(orderToCancel)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sí, Cancelar Pedido
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Toaster />
     </div>
   )

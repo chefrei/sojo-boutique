@@ -273,16 +273,7 @@ ordersRouter.put("/:id/cancel", async (c) => {
       );
     }
   }
-
-  // Reglas para el admin
-  if (currentUser.role === "admin") {
-    if (order.status === "delivered") {
-      return c.json(
-        { detail: "No se puede cancelar un pedido que ya fue entregado" },
-        400
-      );
-    }
-  }
+  // Reglas para el admin (pueden anular ventas/pedidos entregados por devolución)
 
   // Si ya está cancelado, simplemente lo retornamos
   if (order.status === "cancelled") {
