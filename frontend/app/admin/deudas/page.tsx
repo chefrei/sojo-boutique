@@ -19,26 +19,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 
 export default function DeudasPage() {
   const { settings } = useSettings()
   const [debtors, setDebtors] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Payment Modal State
+  const [debtorToPay, setDebtorToPay] = useState<any | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function loadDebts() {
+    try {
+      setIsLoading(true)
+      const data = await apiFetch<any[]>("/admin/debtors")
+      setDebtors(data)
+    } catch (error) {
+      console.error("No se pudieron cargar las deudas", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadDebts() {
-      try {
-        const data = await apiFetch<any[]>("/admin/debtors")
-        setDebtors(data)
-      } catch (error) {
-        console.error("No se pudieron cargar las deudas", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
     loadDebts()
   }, [])
   // Calcular totales
@@ -71,6 +87,40 @@ export default function DeudasPage() {
     ])
     
     exportToPDF("Reporte de Deudas", "Estado de cuenta por cobrar", headers, rows, toast, settings)
+  }
+
+  const handleRegisterPayment = async () => {
+    if (!debtorToPay || !paymentAmount || Number(paymentAmount) <= 0) return
+
+    try {
+      setIsSubmitting(true)
+      await apiFetch("/admin/payments", {
+        method: "POST",
+        body: JSON.stringify({
+          user_id: debtorToPay.id,
+          amount: Number(paymentAmount),
+          method: "cash", // o transfer, lo manejamos genérico por ahora
+          notes: "Abono rápido a cuenta desde listado de deudas",
+        }),
+      })
+
+      toast({
+        title: "Pago registrado",
+        description: `Se han abonado $${paymentAmount} a la cuenta de ${debtorToPay.full_name}.`,
+      })
+
+      setDebtorToPay(null)
+      setPaymentAmount("")
+      await loadDebts()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo registrar el pago.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -223,8 +273,14 @@ export default function DeudasPage() {
                           <DropdownMenuItem asChild className="cursor-pointer">
                             <Link href={`/admin/clientes/${debtor.id}`}>Ver historial</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild className="cursor-pointer">
-                            <Link href="/admin/pagos/nuevo">Registrar pago a cuenta</Link>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setDebtorToPay(debtor)
+                              setPaymentAmount("")
+                            }}
+                          >
+                            Registrar pago a cuenta
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -245,6 +301,47 @@ export default function DeudasPage() {
           Siguiente
         </Button>
       </div>
+
+      {/* Payment Modal */}
+      <Dialog open={!!debtorToPay} onOpenChange={(open) => !open && setDebtorToPay(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Pago</DialogTitle>
+            <DialogDescription>
+              Abonar a la cuenta de <span className="font-semibold">{debtorToPay?.full_name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Deuda Actual:</span>
+              <span className="font-bold text-amber-500">${Number(debtorToPay?.balance || 0).toFixed(2)}</span>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="amount">Monto a abonar ($)</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDebtorToPay(null)} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button onClick={handleRegisterPayment} disabled={isSubmitting || !paymentAmount || Number(paymentAmount) <= 0}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar Pago
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
