@@ -242,6 +242,17 @@ export default function NuevaVentaPage() {
     }
   }
 
+  // Debug de errores de validación
+  const onInvalid = (errors: any) => {
+    console.error("Errores de validación:", errors)
+    const firstError = Object.values(errors)[0] as any
+    toast({
+      title: "Error en el formulario",
+      description: firstError?.message || "Por favor, revisa los campos obligatorios.",
+      variant: "destructive",
+    })
+  }
+
   // ── Carrito ────────────────────────────────────────────────
 
   const addProductToCart = (product: ApiProduct, quantity = 1) => {
@@ -289,8 +300,8 @@ export default function NuevaVentaPage() {
   const removeItem = (id: number) => setCartItems(cartItems.filter((item) => item.id !== id))
 
   const calculateSubtotal = () => Number(cartItems.reduce((s, i) => s + i.subtotal, 0).toFixed(2))
-  const calculateTaxes = () => Number((calculateSubtotal() * 0.16).toFixed(2))
-  const calculateTotal = () => Number((calculateSubtotal() + calculateTaxes()).toFixed(2))
+  const calculateTaxes = () => 0 // Impuestos desactivados (0%) por ahora
+  const calculateTotal = () => Number(calculateSubtotal().toFixed(2))
 
   // ──────────────────────────────────────────────────────────────
   // Render
@@ -314,7 +325,7 @@ export default function NuevaVentaPage() {
           <Button variant="outline" onClick={() => router.push("/admin/ventas")}>
             Cancelar
           </Button>
-          <Button onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+          <Button onClick={form.handleSubmit(onSubmit, onInvalid)} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
