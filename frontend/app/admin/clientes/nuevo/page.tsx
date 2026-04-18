@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 const clientSchema = z.object({
   name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres" }),
   email: z.string().email({ message: "Ingresa un correo electrónico válido" }).optional().or(z.literal("")),
-  phone: z.string().min(7, { message: "Ingresa un número de teléfono válido" }),
+  phone: z.string().optional().or(z.literal("")),
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
@@ -132,7 +132,7 @@ export default function NuevoClientePage() {
                         <FormItem>
                           <FormLabel>Teléfono</FormLabel>
                           <FormControl>
-                            <Input placeholder="Número de teléfono" {...field} />
+                            <Input placeholder="Número de teléfono (opcional)" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

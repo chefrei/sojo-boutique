@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function DeudasPage() {
   const { settings } = useSettings()
@@ -40,6 +41,8 @@ export default function DeudasPage() {
   // Payment Modal State
   const [debtorToPay, setDebtorToPay] = useState<any | null>(null)
   const [paymentAmount, setPaymentAmount] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState("Efectivo")
+  const [paymentNotes, setPaymentNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function loadDebts() {
@@ -99,18 +102,19 @@ export default function DeudasPage() {
         body: JSON.stringify({
           user_id: debtorToPay.id,
           amount: Number(paymentAmount),
-          method: "cash", // o transfer, lo manejamos genérico por ahora
-          notes: "Abono rápido a cuenta desde listado de deudas",
+          method: paymentMethod,
+          notes: paymentNotes || null,
         }),
       })
 
       toast({
-        title: "Pago registrado",
-        description: `Se han abonado $${paymentAmount} a la cuenta de ${debtorToPay.full_name}.`,
+        title: "Pago Registrado",
+        description: `Se acreditó $${Number(paymentAmount).toFixed(2)} al cliente ${debtorToPay.full_name}.`,
       })
 
       setDebtorToPay(null)
       setPaymentAmount("")
+      setPaymentNotes("")
       await loadDebts()
     } catch (error: any) {
       toast({
@@ -278,6 +282,8 @@ export default function DeudasPage() {
                             onClick={() => {
                               setDebtorToPay(debtor)
                               setPaymentAmount("")
+                              setPaymentNotes("")
+                              setPaymentMethod("Efectivo")
                             }}
                           >
                             Registrar pago a cuenta
@@ -302,42 +308,78 @@ export default function DeudasPage() {
         </Button>
       </div>
 
-      {/* Payment Modal */}
-      <Dialog open={!!debtorToPay} onOpenChange={(open) => !open && setDebtorToPay(null)}>
+      {/* Modal para Registrar Pago */}
+      <Dialog open={!!debtorToPay} onOpenChange={(open) => {
+        if (!open) {
+          setDebtorToPay(null)
+          setPaymentAmount("")
+          setPaymentNotes("")
+        }
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
             <DialogDescription>
-              Abonar a la cuenta de <span className="font-semibold">{debtorToPay?.full_name}</span>.
+              Acreditando pago para {debtorToPay?.full_name}. 
+              {debtorToPay?.balance && debtorToPay.balance > 0 ? (
+                <span className="block mt-1 font-medium text-amber-600">Deuda actual: ${Number(debtorToPay.balance).toFixed(2)}</span>
+              ) : null}
             </DialogDescription>
           </DialogHeader>
-          
           <div className="grid gap-4 py-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Deuda Actual:</span>
-              <span className="font-bold text-amber-500">${Number(debtorToPay?.balance || 0).toFixed(2)}</span>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="amount">Monto a abonar ($)</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">
+                Monto ($)
+              </Label>
               <Input
                 id="amount"
                 type="number"
                 step="0.01"
+                min="0.01"
                 placeholder="0.00"
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="method" className="text-right">
+                Método
+              </Label>
+              <div className="col-span-3">
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger id="method">
+                    <SelectValue placeholder="Selecciona un método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Efectivo">Efectivo</SelectItem>
+                    <SelectItem value="Zelle">Zelle</SelectItem>
+                    <SelectItem value="Pago Movil">Pago Móvil</SelectItem>
+                    <SelectItem value="Transferencia">Transferencia</SelectItem>
+                    <SelectItem value="Punto de Venta">Punto de Venta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Referencia
+              </Label>
+              <Textarea
+                id="notes"
+                placeholder="Número de referencia o notas del pago..."
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                className="col-span-3"
               />
             </div>
           </div>
-          
           <DialogFooter>
             <Button variant="outline" onClick={() => setDebtorToPay(null)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button onClick={handleRegisterPayment} disabled={isSubmitting || !paymentAmount || Number(paymentAmount) <= 0}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar Pago
+            <Button onClick={handleRegisterPayment} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Guardar Pago"}
             </Button>
           </DialogFooter>
         </DialogContent>
