@@ -33,7 +33,12 @@ export default function VentasPage() {
     async function loadSales() {
       try {
         const data = await apiFetch<any[]>("/admin/orders")
-        setSales(data)
+        // Mostrar SOLO los entregados en Ventas
+        const onlyDelivered = data.filter(order => 
+          order.estado === "Entregado" || 
+          order.status === "delivered"
+        )
+        setSales(onlyDelivered)
       } catch (error) {
         console.error("No se pudieron cargar las ventas", error)
       } finally {
@@ -44,10 +49,10 @@ export default function VentasPage() {
   }, [])
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
 
-  // Calcular totales
+  // Calcular totales (basados en los pedidos entregados)
   const totalVentas = sales.reduce((sum, sale) => sum + Number(sale.total || sale.total_price || 0), 0)
-  const ventasCompletadas = sales.filter((sale) => sale.estado === "Completado" || sale.payment_status === "paid").length
-  const ventasPendientes = sales.filter((sale) => sale.estado !== "Completado" && sale.payment_status !== "paid" && sale.estado !== "Cancelado").length
+  const ventasCompletadas = sales.filter((sale) => sale.payment_status === "paid").length
+  const ventasPendientesDePago = sales.filter((sale) => sale.payment_status !== "paid").length
 
   async function cancelOrder(id: number) {
     if (!confirm("¿Estás seguro de anular esta venta? El stock será restaurado.")) return;
@@ -143,7 +148,7 @@ export default function VentasPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ventas Completadas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Entregas Pagadas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{ventasCompletadas}</div>
@@ -151,10 +156,10 @@ export default function VentasPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ventas Pendientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Entregas con Deuda</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">{ventasPendientes}</div>
+            <div className="text-2xl font-bold text-amber-500">{ventasPendientesDePago}</div>
           </CardContent>
         </Card>
       </div>
@@ -175,8 +180,8 @@ export default function VentasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="completed">Completado</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
+                <SelectItem value="paid">Pagados</SelectItem>
+                <SelectItem value="pending">Pendientes de Pago</SelectItem>
               </SelectContent>
             </Select>
 
@@ -233,11 +238,12 @@ export default function VentasPage() {
                     <TableCell className="text-center">
                       <Badge
                         variant={
-                          sale.estado === "Completado" || sale.payment_status === "paid" ? "default" : "outline"
+                          sale.payment_status === "paid" ? "default" : "outline"
                         }
                       >
-                        {(sale.estado || sale.payment_status || "Pendiente").toUpperCase()}
+                        {sale.payment_status === "paid" ? "PAGADO" : "CON DEUDA"}
                       </Badge>
+                      <div className="text-[10px] text-muted-foreground mt-1">ENTREGADO</div>
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

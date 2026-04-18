@@ -49,8 +49,8 @@ const orderCreateSchema = z.object({
   payment_method: z.string().optional().default("cash"),
   amount_paid: z.number().min(0).optional().default(0),
   created_at: z.string().optional(),
-  delivered_at: z.string().optional(),
-  notes: z.string().optional(),
+  delivered_at: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 ordersRouter.post("/", zValidator("json", orderCreateSchema), async (c) => {

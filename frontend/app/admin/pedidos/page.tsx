@@ -92,7 +92,7 @@ export default function PedidosPage() {
     const styles: Record<string, string> = {
       Pendiente: "bg-yellow-100 text-yellow-800",
       "En Proceso": "bg-blue-100 text-blue-800",
-      Completado: "bg-green-100 text-green-800",
+      Entregado: "bg-green-100 text-green-800",
       Cancelado: "bg-red-100 text-red-800",
     }
 
@@ -106,11 +106,11 @@ export default function PedidosPage() {
         p.cliente.toLowerCase().includes(search.toLowerCase()) ||
         p.id.toLowerCase().includes(search.toLowerCase())
 
-      // By default, hide 'Completado' to only show active orders for tracking
+      // Vista predeterminada: Solo lo que hay que gestionar (Pendiente y En Proceso)
       if (statusFilter === "pendientes") {
-        return matchesSearch && p.estado !== "Completado" && p.estado !== "Cancelado"
+        return matchesSearch && (p.estado === "Pendiente" || p.estado === "En Proceso")
       } else if (statusFilter === "completados") {
-        return matchesSearch && p.estado === "Completado"
+        return matchesSearch && p.estado === "Entregado"
       }
       return matchesSearch
     })
@@ -142,7 +142,7 @@ export default function PedidosPage() {
     
     let subtitle = "Todos los pedidos"
     if (statusFilter === "pendientes") subtitle = "Pedidos Pendientes y En Proceso"
-    if (statusFilter === "completados") subtitle = "Pedidos Completados/Entregados"
+    if (statusFilter === "completados") subtitle = "Pedidos Entregados"
     if (search) subtitle += ` | Búsqueda: "${search}"`
 
     exportToPDF("Reporte de Pedidos", subtitle, headers, rows, toast, settings)
@@ -180,7 +180,7 @@ export default function PedidosPage() {
           <Button size="sm" className="sm:size-default" asChild>
             <Link href="/admin/ventas/nueva">
               <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Nuevo Pedido Manual</span>
+              <span className="hidden sm:inline">Nuevo Pedido</span>
             </Link>
           </Button>
         </div>
@@ -266,15 +266,15 @@ export default function PedidosPage() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatus(pedido.db_id, 'shipped')}
-                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Completado"}
+                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
                       >
                         <PackageSearch className="w-4 h-4 mr-2" />
-                        Poner "En Proceso"
+                        Marcar "En Proceso"
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatus(pedido.db_id, 'delivered')} 
                         className="font-medium text-green-600"
-                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Completado"}
+                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Marcar como "Entregado"
@@ -283,7 +283,7 @@ export default function PedidosPage() {
                       <DropdownMenuItem 
                         onClick={() => cancelOrder(pedido.db_id)} 
                         className="font-medium text-red-600"
-                        disabled={pedido.estado === "Completado" || pedido.estado === "Cancelado"}
+                        disabled={pedido.estado === "Entregado" || pedido.estado === "Cancelado"}
                       >
                         <Ban className="w-4 h-4 mr-2" />
                         Cancelar Pedido

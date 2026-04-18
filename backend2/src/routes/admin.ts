@@ -237,7 +237,7 @@ adminRouter.get("/orders", async (c) => {
     pending: "Pendiente",
     paid: "Pendiente",
     shipped: "En Proceso",
-    delivered: "Completado",
+    delivered: "Entregado",
     cancelled: "Cancelado",
   };
 
