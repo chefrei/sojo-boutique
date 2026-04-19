@@ -18,7 +18,7 @@ export default function HomePage() {
     async function fetchData() {
       try {
         const [productsData, categoriesData] = await Promise.all([
-          apiFetch<any[]>("/products/", { auth: false }),
+          apiFetch<any[]>("/products", { auth: false }),
           apiFetch<any[]>("/products/categories", { auth: false })
         ])
         // Mostrar solo los primeros 4 productos como destacados
@@ -74,52 +74,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Categories Section */}
-        <section className="py-16 container">
-          <div className="flex flex-col items-center text-center mb-12">
-            <h2 className="font-heading text-3xl md:text-4xl mb-4">Nuestras Categorías</h2>
-            <div className="w-20 h-1 bg-primary rounded-full mb-4" />
-            <p className="text-muted-foreground max-w-2xl">
-              Explora nuestra variedad de productos cuidadosamente seleccionados para ti
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {dbCategories.slice(0, 3).map((category) => (
-              <Link 
-                key={category.id} 
-                href={`/catalogo?search=${category.name}`} 
-                className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all"
-              >
-                <div className="aspect-[3/4] overflow-hidden rounded-lg">
-                  <Image
-                    src={category.image_url || "/placeholder.svg"}
-                    alt={category.name}
-                    width={400}
-                    height={600}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6">
-                  <div>
-                    <h3 className="font-heading text-2xl text-white mb-2">{category.name}</h3>
-                    <span className="inline-flex items-center text-white/90 text-sm font-medium">
-                      Explorar colección
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {dbCategories.length === 0 && !isLoading && (
-              <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
-                Configure sus categorías en el panel administrativo.
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Featured Products */}
+        {/* Categories Section Removed */}        {/* Featured Products */}
         <section className="py-16 bg-muted/30">
           <div className="container">
             <div className="flex flex-col items-center text-center mb-12">

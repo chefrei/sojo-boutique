@@ -203,53 +203,59 @@ export default function ProductoDetalle({ params }: { params: Promise<{ id: stri
 
               <div className="text-2xl font-semibold">${Number(product.price).toFixed(2)}</div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Cantidad</h3>
-                  <div className="flex items-center">
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="rounded-r-none"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <div className="px-4 py-2 border-y text-center w-12">{quantity}</div>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="rounded-l-none"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <div className="ml-4 text-sm text-muted-foreground">
-                      {product.stock > 0 
-                        ? `${product.stock} disponibles` 
-                        : "Disponible bajo pedido (se solicitará a proveedor)"}
+              {isAuthenticated && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Cantidad</h3>
+                    <div className="flex items-center">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="rounded-r-none"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div className="px-4 py-2 border-y text-center w-12">{quantity}</div>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="rounded-l-none"
+                        onClick={() => setQuantity(quantity + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <div className="ml-4 text-sm text-muted-foreground">
+                        {product.stock > 0 
+                          ? `${product.stock} disponibles` 
+                          : "Disponible bajo pedido (se solicitará a proveedor)"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <Button size="lg" className="flex-1" onClick={handleAddToCart} variant={isAdded ? "secondary" : "default"}>
-                  {isAdded ? (
-                    <><Check className="mr-2 h-5 w-5" /> Añadido</>
-                  ) : (
-                    <><ShoppingBag className="mr-2 h-5 w-5" /> Añadir al Carrito</>
-                  )}
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant={inWishlist ? "secondary" : "outline"} 
-                  className="flex-1 sm:flex-none"
-                  onClick={handleToggleWishlist}
-                >
-                  <Heart className={`mr-2 h-5 w-5 ${inWishlist ? "fill-primary text-primary" : ""}`} />
-                  <span className="sm:inline">{inWishlist ? "En Favoritos" : "Favoritos"}</span>
-                </Button>
+                {isAuthenticated && (
+                  <>
+                    <Button size="lg" className="flex-1" onClick={handleAddToCart} variant={isAdded ? "secondary" : "default"}>
+                      {isAdded ? (
+                        <><Check className="mr-2 h-5 w-5" /> Añadido</>
+                      ) : (
+                        <><ShoppingBag className="mr-2 h-5 w-5" /> Añadir al Carrito</>
+                      )}
+                    </Button>
+                    <Button 
+                      size="lg" 
+                      variant={inWishlist ? "secondary" : "outline"} 
+                      className="flex-1 sm:flex-none"
+                      onClick={handleToggleWishlist}
+                    >
+                      <Heart className={`mr-2 h-5 w-5 ${inWishlist ? "fill-primary text-primary" : ""}`} />
+                      <span className="sm:inline">{inWishlist ? "En Favoritos" : "Favoritos"}</span>
+                    </Button>
+                  </>
+                )}
                 <Button size="lg" variant="ghost" className="sm:w-auto flex" onClick={handleShare}>
                   <Share2 className="h-5 w-5 mr-2" />
                   <span className="sm:hidden">Compartir</span>

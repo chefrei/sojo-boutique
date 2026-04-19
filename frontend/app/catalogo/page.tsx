@@ -88,7 +88,7 @@ function CatalogoContent() {
     async function fetchData() {
       try {
         const [productsData, categoriesData] = await Promise.all([
-          apiFetch<any[]>("/products/", { auth: false }),
+          apiFetch<any[]>("/products", { auth: false }),
           apiFetch<any[]>("/products/categories", { auth: false })
         ])
         setProducts(productsData)
@@ -205,117 +205,121 @@ function CatalogoContent() {
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1 space-y-8">
               {/* Filtros de Categorías Estilo Pills */}
-              <div className="flex flex-wrap gap-2 pb-2">
-                <Button 
-                  variant={selectedCategories.length === 0 ? "default" : "outline"} 
-                  size="sm" 
-                  className="rounded-full px-5"
-                  onClick={() => setSelectedCategories([])}
-                >
-                  Todos
-                </Button>
-                {categories.map((category) => (
+              {isAuthenticated && (
+                <div className="flex flex-wrap gap-2 pb-2">
                   <Button 
-                    key={category.id}
-                    variant={selectedCategories.includes(category.id) ? "default" : "outline"} 
+                    variant={selectedCategories.length === 0 ? "default" : "outline"} 
                     size="sm" 
                     className="rounded-full px-5"
-                    onClick={() => toggleCategory(category.id)}
+                    onClick={() => setSelectedCategories([])}
                   >
-                    {category.name}
+                    Todos
                   </Button>
-                ))}
-              </div>
+                  {categories.map((category) => (
+                    <Button 
+                      key={category.id}
+                      variant={selectedCategories.includes(category.id) ? "default" : "outline"} 
+                      size="sm" 
+                      className="rounded-full px-5"
+                      onClick={() => toggleCategory(category.id)}
+                    >
+                      {category.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
 
               {/* Barra de Filtros Activos y Búsqueda */}
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-muted/30 p-4 rounded-xl border border-dashed">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-sm font-medium mr-2">Filtros activos:</div>
-                  {searchQuery && (
-                    <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
-                      Búsqueda: {searchQuery}
-                      <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setSearchQuery("")}>
-                        <Check className="h-3 w-3 rotate-45" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {selectedCategories.length > 0 && (
-                    <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
-                      Categorías ({selectedCategories.length})
-                      <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setSelectedCategories([])}>
-                        <Check className="h-3 w-3 rotate-45" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {(priceRange[0] > 0 || priceRange[1] < 500) && (
-                    <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
-                      ${priceRange[0]} - ${priceRange[1]}
-                      <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setPriceRange([0, 500])}>
-                        <Check className="h-3 w-3 rotate-45" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {(!searchQuery && selectedCategories.length === 0 && priceRange[0] === 0 && priceRange[1] === 500) && (
-                    <span className="text-sm text-muted-foreground italic">Ninguno</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 w-full lg:w-auto">
-                  <div className="relative flex-1 lg:w-[250px]">
-                    <Input 
-                      placeholder="Buscar por nombre..." 
-                      className="h-9 bg-background" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[160px] h-9 bg-background focus:ring-1">
-                      <SelectValue placeholder="Ordenar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Más Recientes</SelectItem>
-                      <SelectItem value="price-low">Precio: Menor a Mayor</SelectItem>
-                      <SelectItem value="price-high">Precio: Mayor a Menor</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <SlidersHorizontal className="h-4 w-4" />
-                        Avanzado
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right">
-                      <SheetHeader>
-                        <SheetTitle>Filtros Avanzados</SheetTitle>
-                        <SheetDescription>Ajusta el rango de precios y otros parámetros.</SheetDescription>
-                      </SheetHeader>
-                      <div className="py-6 space-y-8">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Rango de Precio</h3>
-                            <span className="text-sm font-semibold">${priceRange[0]} - ${priceRange[1]}</span>
-                          </div>
-                          <Slider 
-                            defaultValue={[0, 500]} 
-                            max={500} 
-                            step={10} 
-                            value={priceRange}
-                            onValueChange={setPriceRange}
-                            className="py-4"
-                          />
-                        </div>
-                        <Button className="w-full" onClick={() => { setPriceRange([0, 500]); }}>
-                          Reiniciar Precio
+              {isAuthenticated && (
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-muted/30 p-4 rounded-xl border border-dashed">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-sm font-medium mr-2">Filtros activos:</div>
+                    {searchQuery && (
+                      <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+                        Búsqueda: {searchQuery}
+                        <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setSearchQuery("")}>
+                          <Check className="h-3 w-3 rotate-45" />
                         </Button>
-                      </div>
-                    </SheetContent>
-                  </Sheet>
+                      </Badge>
+                    )}
+                    {selectedCategories.length > 0 && (
+                      <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+                        Categorías ({selectedCategories.length})
+                        <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setSelectedCategories([])}>
+                          <Check className="h-3 w-3 rotate-45" />
+                        </Button>
+                      </Badge>
+                    )}
+                    {(priceRange[0] > 0 || priceRange[1] < 500) && (
+                      <Badge variant="secondary" className="gap-1 pl-2 pr-1 py-1">
+                        ${priceRange[0]} - ${priceRange[1]}
+                        <Button variant="ghost" size="icon" className="h-4 w-4 rounded-full" onClick={() => setPriceRange([0, 500])}>
+                          <Check className="h-3 w-3 rotate-45" />
+                        </Button>
+                      </Badge>
+                    )}
+                    {(!searchQuery && selectedCategories.length === 0 && priceRange[0] === 0 && priceRange[1] === 500) && (
+                      <span className="text-sm text-muted-foreground italic">Ninguno</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="relative flex-1 lg:w-[250px]">
+                      <Input 
+                        placeholder="Buscar por nombre..." 
+                        className="h-9 bg-background" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="w-[160px] h-9 bg-background focus:ring-1">
+                        <SelectValue placeholder="Ordenar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Más Recientes</SelectItem>
+                        <SelectItem value="price-low">Precio: Menor a Mayor</SelectItem>
+                        <SelectItem value="price-high">Precio: Mayor a Menor</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <SlidersHorizontal className="h-4 w-4" />
+                          Avanzado
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="right">
+                        <SheetHeader>
+                          <SheetTitle>Filtros Avanzados</SheetTitle>
+                          <SheetDescription>Ajusta el rango de precios y otros parámetros.</SheetDescription>
+                        </SheetHeader>
+                        <div className="py-6 space-y-8">
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Rango de Precio</h3>
+                              <span className="text-sm font-semibold">${priceRange[0]} - ${priceRange[1]}</span>
+                            </div>
+                            <Slider 
+                              defaultValue={[0, 500]} 
+                              max={500} 
+                              step={10} 
+                              value={priceRange}
+                              onValueChange={setPriceRange}
+                              className="py-4"
+                            />
+                          </div>
+                          <Button className="w-full" onClick={() => { setPriceRange([0, 500]); }}>
+                            Reiniciar Precio
+                          </Button>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {filteredProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-xl border border-dashed text-center">
@@ -341,16 +345,18 @@ function CatalogoContent() {
                         </div>
                       )}
                       
-                      <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant={wishlist.includes(product.id) ? "default" : "secondary"}
-                          size="icon"
-                          className="h-8 w-8 rounded-full shadow-md"
-                          onClick={(e) => handleToggleWishlist(e, product.id)}
-                        >
-                          <Heart className={`h-4 w-4 ${wishlist.includes(product.id) ? "fill-white" : ""}`} />
-                        </Button>
-                      </div>
+                      {isAuthenticated && (
+                        <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant={wishlist.includes(product.id) ? "default" : "secondary"}
+                            size="icon"
+                            className="h-8 w-8 rounded-full shadow-md"
+                            onClick={(e) => handleToggleWishlist(e, product.id)}
+                          >
+                            <Heart className={`h-4 w-4 ${wishlist.includes(product.id) ? "fill-white" : ""}`} />
+                          </Button>
+                        </div>
+                      )}
 
                       <Link href={`/producto/${product.id}`} className="flex-1">
                         <div className="aspect-[4/5] overflow-hidden bg-muted">
@@ -373,20 +379,22 @@ function CatalogoContent() {
                         </div>
                       </Link>
 
-                      <div className="px-4 pb-4">
-                        <Button
-                          size="sm"
-                          className="w-full gap-2 rounded-lg"
-                          variant={addedIds.has(product.id) ? "secondary" : "default"}
-                          onClick={() => handleAddToCart(product)}
-                        >
-                          {addedIds.has(product.id) ? (
-                            <><Check className="h-4 w-4" /> En carrito</>
-                          ) : (
-                            <><ShoppingCart className="h-4 w-4" /> Añadir</>
-                          )}
-                        </Button>
-                      </div>
+                      {isAuthenticated && (
+                        <div className="px-4 pb-4">
+                          <Button
+                            size="sm"
+                            className="w-full gap-2 rounded-lg"
+                            variant={addedIds.has(product.id) ? "secondary" : "default"}
+                            onClick={() => handleAddToCart(product)}
+                          >
+                            {addedIds.has(product.id) ? (
+                              <><Check className="h-4 w-4" /> En carrito</>
+                            ) : (
+                              <><ShoppingCart className="h-4 w-4" /> Añadir</>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

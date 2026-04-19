@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Logo } from "@/components/ui/logo"
 import { UserAccountNav } from "@/components/user-account-nav"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
 
 import { useRouter } from "next/navigation"
 
@@ -22,6 +23,7 @@ export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const { isAuthenticated } = useAuth()
 
   // Detectar scroll para cambiar la apariencia del header
   useEffect(() => {
@@ -114,40 +116,44 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-end gap-2">
-          {isSearchOpen ? (
-            <div className="relative flex items-center">
-              <Input
-                placeholder="Buscar productos..."
-                className="w-[150px] sm:w-[200px] md:w-[300px] pr-8"
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchSubmit}
-                onBlur={() => {
-                  if (!searchQuery) {
-                    setTimeout(() => setIsSearchOpen(false), 200)
-                  }
-                }}
-              />
-              <X
-                className="absolute right-2 h-4 w-4 cursor-pointer text-muted-foreground"
-                onClick={() => {
-                  setIsSearchOpen(false)
-                  setSearchQuery("")
-                }}
-              />
-            </div>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Buscar</span>
-            </Button>
+          {isAuthenticated && (
+            <>
+              {isSearchOpen ? (
+                <div className="relative flex items-center">
+                  <Input
+                    placeholder="Buscar productos..."
+                    className="w-[150px] sm:w-[200px] md:w-[300px] pr-8"
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchSubmit}
+                    onBlur={() => {
+                      if (!searchQuery) {
+                        setTimeout(() => setIsSearchOpen(false), 200)
+                      }
+                    }}
+                  />
+                  <X
+                    className="absolute right-2 h-4 w-4 cursor-pointer text-muted-foreground"
+                    onClick={() => {
+                      setIsSearchOpen(false)
+                      setSearchQuery("")
+                    }}
+                  />
+                </div>
+              ) : (
+                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
+                  <Search className="h-5 w-5" />
+                  <span className="sr-only">Buscar</span>
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="hidden sm:flex">
+                <Heart className="h-5 w-5" />
+                <span className="sr-only">Favoritos</span>
+              </Button>
+              <CartSheet />
+            </>
           )}
-          <Button variant="ghost" size="icon" className="hidden sm:flex">
-            <Heart className="h-5 w-5" />
-            <span className="sr-only">Favoritos</span>
-          </Button>
-          <CartSheet />
           <UserAccountNav />
         </div>
       </div>
