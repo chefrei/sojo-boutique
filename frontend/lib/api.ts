@@ -21,7 +21,9 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
     headers.set("Content-Type", "application/json");
   }
 
-  const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  // Limpiar el endpoint para evitar dobles barras o barras al final si el backend es estricto
+  const cleanEndpoint = endpoint.replace(/\/+$/, "").replace(/^\/+/, "");
+  const url = `${API_BASE_URL}/${cleanEndpoint}`;
   
   const response = await fetch(url, {
     ...init,

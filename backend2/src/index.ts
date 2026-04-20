@@ -29,6 +29,7 @@ const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 app.use("*", corsMiddleware);
 app.use("*", authMiddleware);
+app.use("*", trimTrailingSlash());
 
 // ─── Endpoint Raíz ─────────────────────────────────────
 
