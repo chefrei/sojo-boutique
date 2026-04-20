@@ -36,13 +36,20 @@ export function UserAccountNav() {
     router.push("/")
   }
 
+  const getInitials = () => {
+    if (!user) return "U"
+    if (user.role === "admin") return "AD"
+    const name = user.full_name || user.name || ""
+    return name ? name.charAt(0).toUpperCase() : "U"
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder-user.jpg" alt={user.full_name || "User"} />
-            <AvatarFallback>{(user.full_name || "U").substring(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
