@@ -5,8 +5,15 @@ export type UserRole = "admin" | "client"
 export interface User {
   id: number
   full_name: string
+  name?: string      // Mapeado desde el backend
   email: string
   role: UserRole
+  phone?: string
+  birthdate?: string
+  address?: string
+  city?: string
+  state?: string
+  postal_code?: string
 }
 
 // Esta clave secreta debería estar en variables de entorno en producción

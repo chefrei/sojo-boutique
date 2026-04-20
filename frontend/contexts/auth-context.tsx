@@ -12,6 +12,7 @@ interface AuthContextType {
   isLoading: boolean       // true solo durante la verificación inicial del token
   login: (email: string, password: string) => Promise<User | null>
   logout: () => void
+  refreshUser: () => Promise<void>
   isAuthenticated: boolean
   hasRole: (role: UserRole) => boolean
 }
@@ -79,6 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/")
   }
 
+  const refreshUser = async () => {
+    try {
+      const userData = await apiFetch<User>("/auth/me")
+      setUser(userData)
+    } catch (error) {
+      console.error("No se pudo refrescar el usuario:", error)
+    }
+  }
+
   const hasRole = (role: UserRole) => {
     if (!user) return false
     return user.role === role
@@ -91,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
         hasRole,
       }}

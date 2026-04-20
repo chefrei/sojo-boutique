@@ -73,15 +73,35 @@ wishlistRouter.post("/toggle/:id", async (c) => {
   if (existing) {
     // Eliminarlo
     await db.delete(wishlistItems).where(eq(wishlistItems.id, existing.id));
-    return c.json({ status: "removed", product_id: productId });
+    return c.json({ action: "removed", product_id: productId });
   } else {
     // Agregarlo
     await db.insert(wishlistItems).values({
       user_id: currentUser.id,
       product_id: productId,
     });
-    return c.json({ status: "added", product_id: productId }, 201);
+    return c.json({ action: "added", product_id: productId }, 201);
   }
+});
+
+// ─── GET /check/:id ──────────────────────────────────────
+
+/**
+ * Verifica si un producto específico está en la wishlist del usuario.
+ */
+wishlistRouter.get("/check/:id", async (c) => {
+  const productId = Number(c.req.param("id"));
+  const currentUser = c.get("currentUser")!;
+  const db = createDb(c.env.DB);
+
+  const existing = await db.query.wishlistItems.findFirst({
+    where: and(
+      eq(wishlistItems.user_id, currentUser.id),
+      eq(wishlistItems.product_id, productId)
+    ),
+  });
+
+  return c.json({ inWishlist: !!existing });
 });
 
 export default wishlistRouter;

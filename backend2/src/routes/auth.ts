@@ -12,7 +12,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { createDb } from "../db/index";
-import { users } from "../db/schema";
+import { users, customerProfiles } from "../db/schema";
 import {
   hashPassword,
   verifyPassword,
@@ -134,6 +134,9 @@ auth.get("/me", requireAuth, async (c) => {
     phone: profile?.phone || "",
     birthdate: profile?.birthdate || "",
     address: profile?.address || "",
+    city: profile?.city || "",
+    state: profile?.state || "",
+    postal_code: profile?.postal_code || "",
   });
 });
 
@@ -143,6 +146,10 @@ const profileUpdateSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
   birthdate: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postal_code: z.string().optional(),
 });
 
 auth.patch("/me", requireAuth, zValidator("json", profileUpdateSchema), async (c) => {
@@ -154,18 +161,32 @@ auth.patch("/me", requireAuth, zValidator("json", profileUpdateSchema), async (c
     await db.update(users).set({ full_name: data.name }).where(eq(users.id, user.id));
   }
   
-  if (data.phone !== undefined || data.birthdate !== undefined) {
+  if (
+    data.phone !== undefined ||
+    data.birthdate !== undefined ||
+    data.address !== undefined ||
+    data.city !== undefined ||
+    data.state !== undefined ||
+    data.postal_code !== undefined
+  ) {
     // Check if profile exists
     const profile = await db.query.customerProfiles.findFirst({
-      where: eq(customerProfiles.user_id, user.id)
+      where: eq(customerProfiles.user_id, user.id),
     });
-    
+
     const updateData: any = {};
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.birthdate !== undefined) updateData.birthdate = data.birthdate;
-    
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.state !== undefined) updateData.state = data.state;
+    if (data.postal_code !== undefined) updateData.postal_code = data.postal_code;
+
     if (profile) {
-      await db.update(customerProfiles).set(updateData).where(eq(customerProfiles.user_id, user.id));
+      await db
+        .update(customerProfiles)
+        .set(updateData)
+        .where(eq(customerProfiles.user_id, user.id));
     } else {
       updateData.user_id = user.id;
       await db.insert(customerProfiles).values(updateData);
