@@ -7,14 +7,44 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShoppingBag, Heart, Settings, User } from "lucide-react"
+import { ShoppingBag, Heart, Settings, User, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
+import { apiFetch } from "@/lib/api"
+import { toast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function CuentaPage() {
-  const { user } = useAuth()
+  const { user, mutate } = useAuth() as any
+  const [isSaving, setIsSaving] = useState(false)
+  
+  // States corresponding to user's fields
+  const [name, setName] = useState(user?.name || "")
+  const [phone, setPhone] = useState(user?.phone || "")
+  const [birthdate, setBirthdate] = useState(user?.birthdate || "")
 
   if (!user) {
     return null // Esto no debería ocurrir debido al middleware, pero por si acaso
+  }
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true)
+      await apiFetch("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: name,
+          phone: phone,
+          birthdate: birthdate
+        })
+      })
+      toast({ title: "Perfil actualizado", description: "Tus datos han sido guardados exitosamente." })
+      if(mutate) mutate(); // Pide a auth-context que actualice o recargue la sesion, opcional.
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudieron guardar los cambios.", variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -62,26 +92,29 @@ export default function CuentaPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Nombre completo</Label>
-                        <Input id="name" defaultValue={user.name} />
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Correo electrónico</Label>
-                        <Input id="email" type="email" defaultValue={user.email} />
+                        <Input id="email" type="email" value={user.email} disabled className="bg-muted text-muted-foreground" />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="phone">Teléfono</Label>
-                        <Input id="phone" placeholder="Tu número de teléfono" />
+                        <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Tu número de teléfono" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="birthday">Fecha de nacimiento</Label>
-                        <Input id="birthday" type="date" />
+                        <Input id="birthday" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} />
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button>Guardar Cambios</Button>
+                    <Button onClick={handleSaveProfile} disabled={isSaving}>
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Guardar Cambios
+                    </Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
@@ -103,6 +136,7 @@ export default function CuentaPage() {
           </div>
         </div>
       </main>
+      <Toaster />
     </div>
   )
 }

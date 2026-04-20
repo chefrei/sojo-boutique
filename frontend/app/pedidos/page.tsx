@@ -64,7 +64,7 @@ export default function PedidosPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      "pending": "Pendiente",
+      "pending": "En espera",
       "paid": "Pagado",
       "shipped": "Enviado",
       "delivered": "Entregado",

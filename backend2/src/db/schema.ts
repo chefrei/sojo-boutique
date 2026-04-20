@@ -207,6 +207,7 @@ export const customerProfiles = sqliteTable("customerprofile", {
     .unique()
     .references(() => users.id),
   phone: text("phone"),
+  birthdate: text("birthdate"),
   address: text("address"),
   city: text("city"),
   state: text("state"),
@@ -271,3 +272,33 @@ export const settings = sqliteTable("settings", {
   body_font: text("body_font").notNull().default("Mona Sans"),
   logo_url: text("logo_url").default("/images/logo.png"),
 });
+
+// ──────────────────────────────────────────────
+// WISHLIST ITEMS
+// ──────────────────────────────────────────────
+
+export const wishlistItems = sqliteTable("wishlistitem", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  user_id: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  product_id: integer("product_id")
+    .notNull()
+    .references(() => products.id),
+  created_at: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+}, (table) => [
+  uniqueIndex("ix_wishlist_user_product").on(table.user_id, table.product_id)
+]);
+
+export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
+  user: one(users, {
+    fields: [wishlistItems.user_id],
+    references: [users.id],
+  }),
+  product: one(products, {
+    fields: [wishlistItems.product_id],
+    references: [products.id],
+  }),
+}));

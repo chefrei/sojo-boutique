@@ -164,15 +164,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }))
       }
       
-      await apiFetch("/orders/", {
+      console.log("[checkout] Sending orderData:", orderData);
+      const res = await apiFetch("/orders/", {
         method: "POST",
         body: JSON.stringify(orderData)
       })
+      console.log("[checkout] Order created successfully:", res);
       
-      await clearCart()
+      const clearRes = await clearCart()
+      console.log("[checkout] clearCart result:", clearRes);
       return { success: true }
     } catch (error: any) {
-      console.error("Error al finalizar compra:", error)
+      console.error("[checkout] Error al finalizar compra:", error)
       return { success: false, error: error.message || "Error desconocido al procesar el pedido" }
     }
   }

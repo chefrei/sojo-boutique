@@ -120,13 +120,59 @@ auth.post("/login", async (c) => {
 
 auth.get("/me", requireAuth, async (c) => {
   const user = c.get("currentUser")!;
+  const db = createDb(c.env.DB);
+  const profile = await db.query.customerProfiles.findFirst({
+    where: eq(customerProfiles.user_id, user.id)
+  });
+
   return c.json({
     id: user.id,
     email: user.email,
-    full_name: user.full_name,
+    name: user.full_name,
     role: user.role,
     is_active: user.is_active,
+    phone: profile?.phone || "",
+    birthdate: profile?.birthdate || "",
+    address: profile?.address || "",
   });
+});
+
+// ─── PATCH /me ──────────────────────────────────────────
+
+const profileUpdateSchema = z.object({
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  birthdate: z.string().optional(),
+});
+
+auth.patch("/me", requireAuth, zValidator("json", profileUpdateSchema), async (c) => {
+  const data = c.req.valid("json");
+  const user = c.get("currentUser")!;
+  const db = createDb(c.env.DB);
+  
+  if (data.name) {
+    await db.update(users).set({ full_name: data.name }).where(eq(users.id, user.id));
+  }
+  
+  if (data.phone !== undefined || data.birthdate !== undefined) {
+    // Check if profile exists
+    const profile = await db.query.customerProfiles.findFirst({
+      where: eq(customerProfiles.user_id, user.id)
+    });
+    
+    const updateData: any = {};
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.birthdate !== undefined) updateData.birthdate = data.birthdate;
+    
+    if (profile) {
+      await db.update(customerProfiles).set(updateData).where(eq(customerProfiles.user_id, user.id));
+    } else {
+      updateData.user_id = user.id;
+      await db.insert(customerProfiles).values(updateData);
+    }
+  }
+  
+  return c.json({ status: "success" });
 });
 
 export default auth;

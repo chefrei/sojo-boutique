@@ -21,6 +21,7 @@ import customersRoutes from "./routes/customers";
 import cartRoutes from "./routes/cart";
 import settingsRoutes from "./routes/settings";
 import reportsRoutes from "./routes/reports";
+import wishlistRoutes from "./routes/wishlist";
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -51,6 +52,7 @@ app.route("/api/v1/customers", customersRoutes);
 app.route("/api/v1/cart", cartRoutes);
 app.route("/api/v1/settings", settingsRoutes);
 app.route("/api/v1/reports", reportsRoutes);
+app.route("/api/v1/wishlist", wishlistRoutes);
 
 // ─── Error Handler Global ──────────────────────────────
 
