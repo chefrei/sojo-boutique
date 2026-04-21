@@ -231,71 +231,107 @@ export default function DeudasPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="text-right">Pedidos</TableHead>
-                <TableHead className="text-right">Pagado</TableHead>
-                <TableHead className="text-right">Deuda Restante</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="w-[100px] text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {debtors.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                    No hay clientes con deudas.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                debtors.map((debtor) => (
-                  <TableRow key={debtor.id}>
-                    <TableCell className="font-medium">{debtor.full_name}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{debtor.email}</TableCell>
-                    <TableCell className="text-right">${Number(debtor.total_orders).toFixed(2)}</TableCell>
-                    <TableCell className="text-right text-green-600">${Number(debtor.total_paid).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-bold text-amber-500">${Number(debtor.balance).toFixed(2)}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">
-                        Pendiente
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Abrir menú</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild className="cursor-pointer">
-                            <Link href={`/admin/clientes/${debtor.id}`}>Ver historial</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="cursor-pointer"
-                            onClick={() => {
+          <>
+            {/* Vista de Escritorio (Tabla) */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Pedidos</TableHead>
+                    <TableHead className="text-right">Pagado</TableHead>
+                    <TableHead className="text-right">Deuda Restante</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {debtors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                        No hay clientes con deudas.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    debtors.map((debtor) => (
+                      <TableRow key={debtor.id}>
+                        <TableCell className="font-medium">{debtor.full_name}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{debtor.email}</TableCell>
+                        <TableCell className="text-right">${Number(debtor.total_orders).toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-green-600">${Number(debtor.total_paid).toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold text-amber-500">${Number(debtor.balance).toFixed(2)}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">
+                            Pendiente
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DebtorActions 
+                            debtor={debtor} 
+                            onPay={() => {
                               setDebtorToPay(debtor)
                               setPaymentAmount("")
                               setPaymentNotes("")
                               setPaymentMethod("Efectivo")
                             }}
-                          >
-                            Registrar pago a cuenta
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Vista Móvil (Cards) */}
+            <div className="md:hidden divide-y">
+              {debtors.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  No hay clientes con deudas.
+                </div>
+              ) : (
+                debtors.map((debtor) => (
+                  <div key={debtor.id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-sm">{debtor.full_name}</h3>
+                        <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{debtor.email}</p>
+                      </div>
+                      <DebtorActions 
+                        debtor={debtor} 
+                        onPay={() => {
+                          setDebtorToPay(debtor)
+                          setPaymentAmount("")
+                          setPaymentNotes("")
+                          setPaymentMethod("Efectivo")
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div className="bg-muted/30 p-2 rounded-lg">
+                        <span className="text-muted-foreground block text-[9px] uppercase">Pedidos</span>
+                        <span className="font-bold">${Number(debtor.total_orders).toFixed(2)}</span>
+                      </div>
+                      <div className="bg-muted/30 p-2 rounded-lg text-right">
+                        <span className="text-muted-foreground block text-[9px] uppercase">Pagado</span>
+                        <span className="font-bold text-green-600">${Number(debtor.total_paid).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-end">
+                       <div className="space-y-0.5">
+                          <span className="text-[9px] text-muted-foreground uppercase block">Deuda Pendiente</span>
+                          <span className="text-lg font-bold text-amber-500">${Number(debtor.balance).toFixed(2)}</span>
+                       </div>
+                       <Badge variant="outline" className="text-[10px]">Pendiente</Badge>
+                    </div>
+                  </div>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </div>
+          </>
         )}
       </div>
 
@@ -385,6 +421,32 @@ export default function DeudasPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function DebtorActions({ debtor, onPay }: { debtor: any, onPay: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link href={`/admin/clientes/${debtor.id}`}>Ver historial</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          className="cursor-pointer"
+          onClick={onPay}
+        >
+          Registrar pago a cuenta
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

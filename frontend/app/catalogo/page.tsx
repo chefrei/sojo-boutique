@@ -359,7 +359,7 @@ function CatalogoContent() {
                       )}
 
                       <Link href={`/producto/${product.id}`} className="flex-1">
-                        <div className="aspect-[4/5] overflow-hidden bg-muted">
+                        <div className="aspect-boutique overflow-hidden bg-muted">
                           <Image
                             src={getCleanImageUrl(product.image_url)}
                             alt={product.name}

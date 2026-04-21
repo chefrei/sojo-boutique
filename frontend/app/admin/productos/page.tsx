@@ -222,98 +222,116 @@ export default function ProductosPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden overflow-x-auto min-h-[300px]">
+      <div className="border rounded-lg overflow-hidden min-h-[300px]">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">Imagen</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead className="hidden sm:table-cell text-center">Stock</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="w-[70px] text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Vista de Escritorio (Tabla) */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">Imagen</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead className="hidden md:table-cell">Categoría</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
+                    <TableHead className="hidden sm:table-cell text-center">Stock</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="w-[70px] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                        {products.length === 0 ? "No hay productos todavía." : "No se encontraron productos con esos filtros."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredProducts.map((product) => {
+                      const status = getStatus(product.stock)
+                      return (
+                        <TableRow key={product.id}>
+                          <TableCell>
+                            <Image
+                              src={product.image_url || "/placeholder.svg"}
+                              alt={product.name}
+                              width={60}
+                              height={75}
+                              className="aspect-boutique rounded-md object-cover border"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
+                          <TableCell className="hidden md:table-cell">{product.category?.name || "Sin categoría"}</TableCell>
+                          <TableCell className="text-right">${Number(product.price).toFixed(2)}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-center">{product.stock}</TableCell>
+                          <TableCell className="text-center">
+                            <ProductStatusBadge status={status} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <ProductActions 
+                              product={product} 
+                              onEdit={() => router.push(`/admin/productos/${product.id}/editar`)}
+                              onDelete={() => setProductToDelete({ id: product.id, name: product.name })}
+                              isDeleting={deletingId === product.id}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Vista Móvil (Cards) */}
+            <div className="md:hidden divide-y">
               {filteredProducts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                    {products.length === 0 ? "No hay productos todavía." : "No se encontraron productos con esos filtros."}
-                  </TableCell>
-                </TableRow>
+                <div className="text-center py-10 text-muted-foreground">
+                  No hay productos.
+                </div>
               ) : (
                 filteredProducts.map((product) => {
                   const status = getStatus(product.stock)
                   return (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <Image
-                          src={product.image_url || "/placeholder.svg"}
-                          alt={product.name}
-                          width={50}
-                          height={50}
-                          className="aspect-square rounded-md object-cover"
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium max-w-[150px] truncate">{product.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">{product.category?.name || "Sin categoría"}</TableCell>
-                      <TableCell className="text-right">${Number(product.price).toFixed(2)}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-center">{product.stock}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={
-                            status === "Activo"
-                              ? "default"
-                              : status === "Bajo Stock"
-                                ? "outline"
-                                : "destructive"
-                          }
-                        >
-                          {status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Abrir menú</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => router.push(`/admin/productos/${product.id}/editar`)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              disabled={deletingId === product.id}
-                              onClick={() => setProductToDelete({ id: product.id, name: product.name })}
-                            >
-                              {deletingId === product.id ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="mr-2 h-4 w-4" />
-                              )}
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                    <div key={product.id} className="p-4 flex gap-4">
+                      <Image
+                        src={product.image_url || "/placeholder.svg"}
+                        alt={product.name}
+                        width={80}
+                        height={100}
+                        className="aspect-boutique rounded-lg object-cover border flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="font-bold truncate text-sm">{product.name}</h3>
+                            <ProductActions 
+                              product={product} 
+                              onEdit={() => router.push(`/admin/productos/${product.id}/editar`)}
+                              onDelete={() => setProductToDelete({ id: product.id, name: product.name })}
+                              isDeleting={deletingId === product.id}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">{product.category?.name || "Sin categoría"}</p>
+                        </div>
+                        <div className="flex justify-between items-end mt-2">
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold text-primary">${Number(product.price).toFixed(2)}</div>
+                            <div className="text-[10px] text-muted-foreground">Stock: {product.stock}</div>
+                          </div>
+                          <ProductStatusBadge status={status} />
+                        </div>
+                      </div>
+                    </div>
                   )
                 })
               )}
-            </TableBody>
-          </Table>
+            </div>
+          </>
         )}
       </div>
 
@@ -359,5 +377,65 @@ export default function ProductosPage() {
       </AlertDialogContent>
     </AlertDialog>
     </>
+  )
+}
+
+// Componentes auxiliares para mejorar la legibilidad y mantenimiento
+function ProductStatusBadge({ status }: { status: string }) {
+  return (
+    <Badge
+      variant={
+        status === "Activo"
+          ? "default"
+          : status === "Bajo Stock"
+            ? "outline"
+            : "destructive"
+      }
+    >
+      {status}
+    </Badge>
+  )
+}
+
+function ProductActions({ 
+  product, 
+  onEdit, 
+  onDelete, 
+  isDeleting 
+}: { 
+  product: any, 
+  onEdit: () => void, 
+  onDelete: () => void, 
+  isDeleting: boolean 
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+          <Edit className="mr-2 h-4 w-4" />
+          Editar
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive cursor-pointer"
+          disabled={isDeleting}
+          onClick={onDelete}
+        >
+          {isDeleting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="mr-2 h-4 w-4" />
+          )}
+          Eliminar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

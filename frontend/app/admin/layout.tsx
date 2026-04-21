@@ -116,7 +116,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex flex-1">
         <DesktopSidebar routes={routes} onLogout={handleLogout} settings={settings} pathname={pathname} />
         <div className="flex flex-col flex-1">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 shadow-sm">
             <div className="flex-1 flex items-center gap-4">
               <h1 className="text-lg font-semibold md:text-xl">Panel de Administración</h1>
             </div>

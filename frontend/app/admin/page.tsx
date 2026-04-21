@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
         <p className="text-muted-foreground">Resumen general de tu negocio</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
@@ -128,7 +128,7 @@ export default function AdminDashboardPage() {
           <TabsTrigger value="reports">Reportes</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
             <Card className="lg:col-span-4">
               <CardHeader>
                 <CardTitle>Ventas Recientes</CardTitle>
@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
           </div>
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <Card className="col-span-1">
               <CardHeader>
                 <CardTitle>Rendimiento Mensual</CardTitle>

@@ -269,80 +269,106 @@ export default function ClientesPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="text-center">Ventas</TableHead>
-              <TableHead>Última Compra</TableHead>
-              <TableHead className="text-right">Deuda</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[100px] text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredClients.length === 0 ? (
-               <TableRow>
-                 <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                   {clients.length === 0 ? "No hay clientes todavía." : "No se encontraron clientes con esos filtros."}
-                 </TableCell>
-               </TableRow>
-             ) : (
-            filteredClients.map((client) => (
-              <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.name}</TableCell>
-                <TableCell>{client.phone || "—"}</TableCell>
-                <TableCell>{client.email || "—"}</TableCell>
-                <TableCell className="text-center">{client.compras}</TableCell>
-                <TableCell>{client.ultimaCompra ? formatDate(client.ultimaCompra) : "—"}</TableCell>
-                <TableCell className="text-right">
-                  {client.deuda > 0 ? (
-                    <span className="text-amber-500 font-medium">${Number(client.deuda).toFixed(2)}</span>
+          <>
+            {/* Vista de Escritorio (Tabla) */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-center">Ventas</TableHead>
+                    <TableHead>Última Compra</TableHead>
+                    <TableHead className="text-right">Deuda</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        {clients.length === 0 ? "No hay clientes todavía." : "No se encontraron clientes con esos filtros."}
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    <span className="text-green-500 font-medium">$0.00</span>
+                    filteredClients.map((client) => (
+                      <TableRow key={client.id}>
+                        <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell>{client.phone || "—"}</TableCell>
+                        <TableCell>{client.email || "—"}</TableCell>
+                        <TableCell className="text-center">{client.compras}</TableCell>
+                        <TableCell>{client.ultimaCompra ? formatDate(client.ultimaCompra) : "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <ClientDebtValue debt={client.deuda} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <ClientStatusBadge status={client.status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <ClientActions 
+                            client={client} 
+                            onEdit={() => router.push(`/admin/clientes/${client.id}/editar`)}
+                            onDetails={() => router.push(`/admin/clientes/${client.id}`)}
+                            onRegSale={() => router.push(`/admin/ventas/nueva?cliente=${client.id}`)}
+                            onRegPayment={() => setPaymentClient({ id: client.id, name: client.name, debt: client.deuda })}
+                            onDelete={() => setClientToDelete({ id: client.id, name: client.name })}
+                            isDeleting={deletingId === client.id}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant={client.status === "active" ? "default" : "outline"}>
-                    {client.status === "active" ? "Activo" : "Inactivo"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => router.push(`/admin/clientes/${client.id}`)}>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/admin/clientes/${client.id}/editar`)}>Editar</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/admin/ventas/nueva?cliente=${client.id}`)}>Registrar venta</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setPaymentClient({ id: client.id, name: client.name, debt: client.deuda })}>
-                        <DollarSign className="mr-2 h-4 w-4" />
-                        Registrar Pago
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        disabled={deletingId === client.id}
-                        onClick={() => setClientToDelete({ id: client.id, name: client.name })}
-                      >
-                        {deletingId === client.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            )))}
-          </TableBody>
-        </Table>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Vista Móvil (Cards) */}
+            <div className="md:hidden divide-y">
+              {filteredClients.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  No hay clientes.
+                </div>
+              ) : (
+                filteredClients.map((client) => (
+                  <div key={client.id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-sm">{client.name}</h3>
+                        <p className="text-xs text-muted-foreground">{client.phone || client.email || "Sin contacto"}</p>
+                      </div>
+                      <ClientActions 
+                        client={client} 
+                        onEdit={() => router.push(`/admin/clientes/${client.id}/editar`)}
+                        onDetails={() => router.push(`/admin/clientes/${client.id}`)}
+                        onRegSale={() => router.push(`/admin/ventas/nueva?cliente=${client.id}`)}
+                        onRegPayment={() => setPaymentClient({ id: client.id, name: client.name, debt: client.deuda })}
+                        onDelete={() => setClientToDelete({ id: client.id, name: client.name })}
+                        isDeleting={deletingId === client.id}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div className="bg-muted/30 p-2 rounded-lg">
+                        <span className="text-muted-foreground block">Ventas</span>
+                        <span className="font-bold">{client.compras}</span>
+                      </div>
+                      <div className="bg-muted/30 p-2 rounded-lg">
+                        <span className="text-muted-foreground block">Deuda</span>
+                        <ClientDebtValue debt={client.deuda} />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-muted-foreground">Última: {client.ultimaCompra ? formatDate(client.ultimaCompra) : "—"}</span>
+                      <ClientStatusBadge status={client.status} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -461,6 +487,75 @@ export default function ClientesPage() {
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function ClientStatusBadge({ status }: { status: string }) {
+  return (
+    <Badge variant={status === "active" ? "default" : "outline"}>
+      {status === "active" ? "Activo" : "Inactivo"}
+    </Badge>
+  )
+}
+
+function ClientDebtValue({ debt }: { debt: number }) {
+  return (
+    <>
+      {debt > 0 ? (
+        <span className="text-amber-500 font-medium">${Number(debt).toFixed(2)}</span>
+      ) : (
+        <span className="text-green-500 font-medium">$0.00</span>
+      )}
+    </>
+  )
+}
+
+function ClientActions({ 
+  client, 
+  onEdit, 
+  onDetails, 
+  onRegSale, 
+  onRegPayment, 
+  onDelete, 
+  isDeleting 
+}: { 
+  client: any, 
+  onEdit: () => void, 
+  onDetails: () => void, 
+  onRegSale: () => void, 
+  onRegPayment: () => void, 
+  onDelete: () => void, 
+  isDeleting: boolean 
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onDetails} className="cursor-pointer">Ver detalles</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit} className="cursor-pointer">Editar</DropdownMenuItem>
+        <DropdownMenuItem onClick={onRegSale} className="cursor-pointer">Registrar venta</DropdownMenuItem>
+        <DropdownMenuItem onClick={onRegPayment} className="cursor-pointer">
+          <DollarSign className="mr-2 h-4 w-4" />
+          Registrar Pago
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          className="text-destructive focus:text-destructive cursor-pointer"
+          disabled={isDeleting}
+          onClick={onDelete}
+        >
+          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+          Eliminar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

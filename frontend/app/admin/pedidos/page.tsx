@@ -229,84 +229,94 @@ export default function PedidosPage() {
              <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead className="w-[200px]">Productos</TableHead>
-              <TableHead className="text-right">Total ($)</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[100px] text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPedidos.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                    No se encontraron pedidos.
-                  </TableCell>
-                </TableRow>
-            ) : (
-            filteredPedidos.map((pedido) => (
-              <TableRow key={pedido.db_id}>
-                <TableCell className="font-medium">{pedido.id}</TableCell>
-                <TableCell>{pedido.fecha}</TableCell>
-                <TableCell>{pedido.cliente}</TableCell>
-                <TableCell>
-                  <div className="text-sm truncate max-w-[200px]" title={pedido.productos.join(", ")}>
-                    {pedido.productos.join(", ")}
+          <>
+            {/* Vista de Escritorio (Tabla) */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="w-[200px]">Productos</TableHead>
+                    <TableHead className="text-right">Total ($)</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="w-[100px] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPedidos.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                          No se encontraron pedidos.
+                        </TableCell>
+                      </TableRow>
+                  ) : (
+                  filteredPedidos.map((pedido) => (
+                    <TableRow key={pedido.db_id}>
+                      <TableCell className="font-medium">{pedido.id}</TableCell>
+                      <TableCell>{pedido.fecha}</TableCell>
+                      <TableCell>{pedido.cliente}</TableCell>
+                      <TableCell>
+                        <div className="text-sm truncate max-w-[200px]" title={pedido.productos.join(", ")}>
+                          {pedido.productos.join(", ")}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-amber-600">${pedido.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <PedidoStatusBadge status={pedido.estado} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <PedidoActions 
+                          pedido={pedido} 
+                          onUpdate={updateOrderStatus} 
+                          onCancel={() => setOrderToCancel(pedido.db_id)}
+                          isUpdating={isUpdating === pedido.db_id}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Vista Móvil (Cards) */}
+            <div className="md:hidden divide-y">
+              {filteredPedidos.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  No hay pedidos.
+                </div>
+              ) : (
+                filteredPedidos.map((pedido) => (
+                  <div key={pedido.db_id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-xs font-bold text-muted-foreground"># {pedido.id}</span>
+                        <h3 className="font-bold text-sm truncate max-w-[180px]">{pedido.cliente}</h3>
+                        <p className="text-[10px] text-muted-foreground">{pedido.fecha}</p>
+                      </div>
+                      <PedidoActions 
+                        pedido={pedido} 
+                        onUpdate={updateOrderStatus} 
+                        onCancel={() => setOrderToCancel(pedido.db_id)}
+                        isUpdating={isUpdating === pedido.db_id}
+                      />
+                    </div>
+                    
+                    <div className="bg-muted/30 p-2 rounded-lg space-y-1">
+                      <div className="text-[10px] text-muted-foreground">Productos:</div>
+                      <div className="text-[11px] truncate">{pedido.productos.join(", ")}</div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm font-bold text-amber-600">${pedido.total.toFixed(2)}</div>
+                      <PedidoStatusBadge status={pedido.estado} />
+                    </div>
                   </div>
-                </TableCell>
-                <TableCell className="text-right font-medium text-amber-600">${pedido.total.toFixed(2)}</TableCell>
-                <TableCell className="text-center">{getStatusBadge(pedido.estado)}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isUpdating === pedido.db_id}>
-                        {isUpdating === pedido.db_id ? (
-                           <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                           <MoreHorizontal className="w-4 h-4" />
-                        )}
-                        <span className="sr-only">Abrir menú</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Cambiar Estado</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => updateOrderStatus(pedido.db_id, 'shipped')}
-                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
-                      >
-                        <PackageSearch className="w-4 h-4 mr-2" />
-                        Marcar "En Proceso"
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => updateOrderStatus(pedido.db_id, 'delivered')} 
-                        className="font-medium text-green-600"
-                        disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Marcar como "Entregado"
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => setOrderToCancel(pedido.db_id)} 
-                        className="font-medium text-red-600 cursor-pointer"
-                        disabled={pedido.estado === "Entregado" || pedido.estado === "Cancelado"}
-                      >
-                        <Ban className="w-4 h-4 mr-2" />
-                        Cancelar Pedido
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            )))}
-          </TableBody>
-        </Table>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -333,5 +343,76 @@ export default function PedidosPage() {
 
       <Toaster />
     </div>
+  )
+}
+
+function PedidoStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    Pendiente: "bg-yellow-100 text-yellow-800",
+    "En Proceso": "bg-blue-100 text-blue-800",
+    Entregado: "bg-green-100 text-green-800",
+    Cancelado: "bg-red-100 text-red-800",
+  }
+
+  return (
+    <Badge className={styles[status] || "bg-gray-100 text-gray-800"}>
+      {status}
+    </Badge>
+  )
+}
+
+function PedidoActions({ 
+  pedido, 
+  onUpdate, 
+  onCancel, 
+  isUpdating 
+}: { 
+  pedido: any, 
+  onUpdate: (id: number, status: string) => void, 
+  onCancel: () => void, 
+  isUpdating: boolean 
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" disabled={isUpdating}>
+          {isUpdating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+              <MoreHorizontal className="w-4 h-4" />
+          )}
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Cambiar Estado</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={() => onUpdate(pedido.db_id, 'shipped')}
+          disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
+          className="cursor-pointer"
+        >
+          <PackageSearch className="w-4 h-4 mr-2" />
+          Marcar "En Proceso"
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={() => onUpdate(pedido.db_id, 'delivered')} 
+          className="font-medium text-green-600 cursor-pointer"
+          disabled={pedido.estado === "Cancelado" || pedido.estado === "Entregado"}
+        >
+          <CheckCircle className="w-4 h-4 mr-2" />
+          Marcar como "Entregado"
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={onCancel} 
+          className="font-medium text-red-600 cursor-pointer"
+          disabled={pedido.estado === "Entregado" || pedido.estado === "Cancelado"}
+        >
+          <Ban className="w-4 h-4 mr-2" />
+          Cancelar Pedido
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

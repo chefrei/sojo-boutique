@@ -165,12 +165,12 @@ export default function ProductoDetalle({ params }: { params: Promise<{ id: stri
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
             {/* Imágenes del producto - Responsivo */}
             <div className="space-y-4">
-              <div className="aspect-[4/5] overflow-hidden rounded-lg border">
+              <div className="aspect-boutique overflow-hidden rounded-lg border">
                 <Image
                   src={product.image_url || "/placeholder.svg"}
                   alt={product.name}
                   width={500}
-                  height={600}
+                  height={625}
                   className="h-full w-full object-cover"
                   priority
                 />

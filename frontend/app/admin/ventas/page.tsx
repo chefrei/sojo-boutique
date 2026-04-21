@@ -233,87 +233,102 @@ export default function VentasPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden overflow-x-auto min-h-[300px]">
+      <div className="border rounded-lg overflow-hidden min-h-[300px]">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cliente ID</TableHead>
-                <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                <TableHead className="hidden sm:table-cell text-center">Productos</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="hidden lg:table-cell">Método</TableHead>
-                <TableHead className="text-center">Estado</TableHead>
-                <TableHead className="w-[70px] text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Vista de Escritorio (Tabla) */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Cliente ID</TableHead>
+                    <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                    <TableHead className="hidden sm:table-cell text-center">Productos</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="hidden lg:table-cell">Método</TableHead>
+                    <TableHead className="text-center">Estado</TableHead>
+                    <TableHead className="w-[70px] text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        No hay ventas registradas.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sales.map((sale) => (
+                      <TableRow key={sale.db_id || sale.id}>
+                        <TableCell>{sale.id}</TableCell>
+                        <TableCell className="font-medium max-w-[120px] truncate">{sale.cliente || sale.user_id}</TableCell>
+                        <TableCell className="hidden md:table-cell">{sale.fecha ? formatDate(sale.fecha) : "—"}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-center truncate max-w-[150px]">{(sale.productos || []).join(", ") || "--"}</TableCell>
+                        <TableCell className="text-right">${Number(sale.total || sale.total_price || 0).toFixed(2)}</TableCell>
+                        <TableCell className="hidden lg:table-cell">Online</TableCell>
+                        <TableCell className="text-center">
+                          <VentaBadges sale={sale} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <VentaActions 
+                            sale={sale} 
+                            onViewDetail={() => setOrderToView(sale)} 
+                            onCancel={() => setOrderToCancel(sale.db_id || sale.id)}
+                            isUpdating={isUpdating === (sale.db_id || sale.id)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Vista Móvil (Cards) */}
+            <div className="md:hidden divide-y">
               {sales.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                    No hay ventas registradas.
-                  </TableCell>
-                </TableRow>
+                <div className="text-center py-10 text-muted-foreground">
+                  No hay ventas registradas.
+                </div>
               ) : (
                 sales.map((sale) => (
-                  <TableRow key={sale.db_id || sale.id}>
-                    <TableCell>{sale.id}</TableCell>
-                    <TableCell className="font-medium max-w-[120px] truncate">{sale.cliente || sale.user_id}</TableCell>
-                    <TableCell className="hidden md:table-cell">{sale.fecha ? formatDate(sale.fecha) : "—"}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-center truncate max-w-[150px]">{(sale.productos || []).join(", ") || "--"}</TableCell>
-                    <TableCell className="text-right">${Number(sale.total || sale.total_price || 0).toFixed(2)}</TableCell>
-                    <TableCell className="hidden lg:table-cell">Online</TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={
-                          sale.payment_status === "paid" ? "default" : "outline"
-                        }
-                      >
-                        {sale.payment_status === "paid" ? "PAGADO" : "CON DEUDA"}
-                      </Badge>
-                      <div className="text-[10px] text-muted-foreground mt-1">ENTREGADO</div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Abrir menú</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => setOrderToView(sale)}
-                            className="cursor-pointer"
-                          >
-                            Ver detalles
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer">
-                            Imprimir factura
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive font-medium cursor-pointer"
-                            onClick={() => setOrderToCancel(sale.db_id || sale.id)}
-                            disabled={sale.estado === "Cancelado" || isUpdating === (sale.db_id || sale.id)}
-                          >
-                            Anular venta
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                  <div key={sale.db_id || sale.id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-xs font-bold text-muted-foreground"># {sale.id}</span>
+                        <h3 className="font-bold text-sm truncate max-w-[200px]">{sale.cliente || "Consumidor Final"}</h3>
+                        <p className="text-[10px] text-muted-foreground">{sale.fecha ? formatDate(sale.fecha) : "—"}</p>
+                      </div>
+                      <VentaActions 
+                        sale={sale} 
+                        onViewDetail={() => setOrderToView(sale)} 
+                        onCancel={() => setOrderToCancel(sale.db_id || sale.id)}
+                        isUpdating={isUpdating === (sale.db_id || sale.id)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg">
+                      <div className="text-xs truncate max-w-[200px]">
+                        <span className="text-muted-foreground mr-1">Items:</span>
+                        {(sale.productos || []).join(", ") || "No especificado"}
+                      </div>
+                      <div className="text-sm font-bold">${Number(sale.total || sale.total_price || 0).toFixed(2)}</div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div className="text-[10px] text-muted-foreground">Método: Online</div>
+                      <VentaBadges sale={sale} />
+                    </div>
+                  </div>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </div>
+          </>
         )}
       </div>
 
@@ -398,6 +413,65 @@ export default function VentasPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function VentaBadges({ sale }: { sale: any }) {
+  return (
+    <div className="flex flex-col items-center">
+      <Badge
+        variant={
+          sale.payment_status === "paid" ? "default" : "outline"
+        }
+      >
+        {sale.payment_status === "paid" ? "PAGADO" : "CON DEUDA"}
+      </Badge>
+      <div className="text-[10px] text-muted-foreground mt-1 uppercase">Entregado</div>
+    </div>
+  )
+}
+
+function VentaActions({ 
+  sale, 
+  onViewDetail, 
+  onCancel, 
+  isUpdating 
+}: { 
+  sale: any, 
+  onViewDetail: () => void, 
+  onCancel: () => void, 
+  isUpdating: boolean 
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={onViewDetail}
+          className="cursor-pointer"
+        >
+          Ver detalles
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer">
+          Imprimir factura
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          className="text-destructive font-medium cursor-pointer"
+          onClick={onCancel}
+          disabled={sale.estado === "Cancelado" || isUpdating}
+        >
+          Anular venta
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
